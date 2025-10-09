@@ -65,6 +65,7 @@ logs/
 .env
 .env.*
 *.env
+!.env.example
 config.local.py
 secrets.py
 
