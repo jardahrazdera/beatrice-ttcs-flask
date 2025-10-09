@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Nastavení - Řízení ohřevu vody{% endblock %}
+
+{% block content %}
+<div class="settings">
+    <h2>Nastavení systému</h2>
+
+    <div class="settings-grid">
+        <!-- Temperature Settings -->
+        <div class="card">
+            <h3>Nastavení teploty</h3>
+            <form id="temp-settings-form" class="settings-form">
+                <div class="form-group">
+                    <label for="setpoint">Cílová teplota (°C)</label>
+                    <input type="number" id="setpoint" name="setpoint"
+                           min="30" max="85" step="0.5" value="60" required>
+                    <small>Rozsah: 30-85°C</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="hysteresis">Hystereze (°C)</label>
+                    <input type="number" id="hysteresis" name="hysteresis"
+                           min="0.5" max="10" step="0.5" value="2" required>
+                    <small>Tolerance od cílové teploty</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="max-temp">Maximální teplota (°C)</label>
+                    <input type="number" id="max-temp" name="max_temperature"
+                           min="60" max="95" step="1" value="85" required>
+                    <small>Bezpečnostní limit</small>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Uložit nastavení teploty</button>
+            </form>
+        </div>
+
+        <!-- Pump Settings -->
+        <div class="card">
+            <h3>Nastavení čerpadla</h3>
+            <form id="pump-settings-form" class="settings-form">
+                <div class="form-group">
+                    <label for="pump-delay">Prodleva vypnutí čerpadla (s)</label>
+                    <input type="number" id="pump-delay" name="pump_delay"
+                           min="0" max="300" step="5" value="60" required>
+                    <small>Doba po vypnutí topení (0-300s)</small>
+                </div>
+
+                <div class="alert alert-warning">
+                    <strong>Upozornění:</strong> Čerpadlo je ovládáno automaticky.
+                    Manuální ovládání může způsobit přehřátí topné jednotky!
+                </div>
+
+                <button type="submit" class="btn btn-primary">Uložit nastavení čerpadla</button>
+            </form>
+        </div>
+
+        <!-- System Settings -->
+        <div class="card">
+            <h3>Systémová nastavení</h3>
+            <form id="system-settings-form" class="settings-form">
+                <div class="form-group">
+                    <label for="update-interval">Interval aktualizace (s)</label>
+                    <input type="number" id="update-interval" name="update_interval"
+                           min="1" max="60" step="1" value="5" required>
+                    <small>Frekvence čtení teplot (1-60s)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="sensor-timeout">Timeout senzoru (s)</label>
+                    <input type="number" id="sensor-timeout" name="sensor_timeout"
+                           min="5" max="120" step="5" value="30" required>
+                    <small>Časový limit čtení senzoru (5-120s)</small>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Uložit systémová nastavení</button>
+            </form>
+        </div>
+
+        <!-- Manual Override -->
+        <div class="card">
+            <h3>Manuální ovládání</h3>
+            <div class="alert alert-danger">
+                <strong>Varování:</strong> Manuální režim deaktivuje automatické řízení!
+            </div>
+
+            <form id="manual-override-form" class="settings-form">
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="manual-override" name="manual_override">
+                        Povolit manuální režim
+                    </label>
+                </div>
+
+                <div id="manual-controls" class="manual-controls" style="display: none;">
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="manual-heating" name="manual_heating">
+                            Zapnout topení manuálně
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-warning">Potvrdit manuální režim</button>
+            </form>
+        </div>
+
+        <!-- Hardware Configuration -->
+        <div class="card">
+            <h3>Hardwarová konfigurace</h3>
+            <div class="info-group">
+                <div class="info-item">
+                    <span class="info-label">Relé topení:</span>
+                    <span class="info-value" id="relay-heating">1</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Relé čerpadla:</span>
+                    <span class="info-value" id="relay-pump">2</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Počet senzorů:</span>
+                    <span class="info-value" id="sensor-count">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Status -->
+        <div class="card">
+            <h3>Aktuální stav</h3>
+            <div class="status-summary">
+                <div class="status-row">
+                    <span>Režim:</span>
+                    <span id="current-mode" class="badge">Automatický</span>
+                </div>
+                <div class="status-row">
+                    <span>Topení:</span>
+                    <span id="current-heating" class="badge">Vypnuto</span>
+                </div>
+                <div class="status-row">
+                    <span>Čerpadlo:</span>
+                    <span id="current-pump" class="badge">Vypnuto</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-footer">
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">Zpět na dashboard</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+{% endblock %}

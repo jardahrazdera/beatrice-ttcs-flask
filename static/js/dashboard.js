@@ -1,0 +1,248 @@
+/**
+ * Dashboard JavaScript - Real-time monitoring and updates
+ */
+
+// WebSocket connection
+let socket;
+
+// Chart.js instance
+let temperatureChart;
+
+// Temperature history data
+const temperatureHistory = {
+    labels: [],
+    tank1: [],
+    tank2: [],
+    tank3: [],
+    average: []
+};
+
+const MAX_HISTORY_POINTS = 60; // Keep last 60 data points
+
+/**
+ * Initialize WebSocket connection
+ */
+function initWebSocket() {
+    socket = io();
+
+    socket.on('connect', () => {
+        console.log('Connected to server');
+        utils.showNotification('Připojeno k serveru', 'success');
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Disconnected from server');
+        utils.showNotification('Odpojeno od serveru', 'warning');
+    });
+
+    socket.on('temperature_update', (data) => {
+        updateTemperatureDisplay(data);
+        updateTemperatureChart(data);
+    });
+
+    socket.on('status_update', (data) => {
+        updateStatusDisplay(data);
+    });
+
+    socket.on('error', (error) => {
+        console.error('WebSocket error:', error);
+        utils.showNotification('Chyba komunikace', 'error');
+    });
+}
+
+/**
+ * Update temperature display
+ */
+function updateTemperatureDisplay(data) {
+    // Update individual tank temperatures
+    const temp1 = document.querySelector('#temp1 .temp-value');
+    const temp2 = document.querySelector('#temp2 .temp-value');
+    const temp3 = document.querySelector('#temp3 .temp-value');
+    const tempAvg = document.querySelector('#temp-avg .temp-value');
+
+    if (temp1) temp1.textContent = utils.formatTemperature(data.tank1);
+    if (temp2) temp2.textContent = utils.formatTemperature(data.tank2);
+    if (temp3) temp3.textContent = utils.formatTemperature(data.tank3);
+    if (tempAvg) tempAvg.textContent = utils.formatTemperature(data.average);
+}
+
+/**
+ * Update status indicators
+ */
+function updateStatusDisplay(data) {
+    // Heating status
+    const heatingStatus = document.getElementById('heating-status');
+    const heatingText = document.getElementById('heating-text');
+
+    if (heatingStatus) {
+        if (data.heating) {
+            heatingStatus.classList.add('active');
+            heatingText.textContent = 'Zapnuto';
+        } else {
+            heatingStatus.classList.remove('active');
+            heatingText.textContent = 'Vypnuto';
+        }
+    }
+
+    // Pump status
+    const pumpStatus = document.getElementById('pump-status');
+    const pumpText = document.getElementById('pump-text');
+
+    if (pumpStatus) {
+        if (data.pump) {
+            pumpStatus.classList.add('active');
+            pumpText.textContent = 'Zapnuto';
+        } else {
+            pumpStatus.classList.remove('active');
+            pumpText.textContent = 'Vypnuto';
+        }
+    }
+
+    // Settings display
+    utils.updateElement('setpoint', utils.formatTemperature(data.setpoint));
+    utils.updateElement('hysteresis', utils.formatTemperature(data.hysteresis));
+}
+
+/**
+ * Update temperature chart with new data
+ */
+function updateTemperatureChart(data) {
+    const now = new Date().toLocaleTimeString('cs-CZ');
+
+    // Add new data point
+    temperatureHistory.labels.push(now);
+    temperatureHistory.tank1.push(data.tank1);
+    temperatureHistory.tank2.push(data.tank2);
+    temperatureHistory.tank3.push(data.tank3);
+    temperatureHistory.average.push(data.average);
+
+    // Keep only last N points
+    if (temperatureHistory.labels.length > MAX_HISTORY_POINTS) {
+        temperatureHistory.labels.shift();
+        temperatureHistory.tank1.shift();
+        temperatureHistory.tank2.shift();
+        temperatureHistory.tank3.shift();
+        temperatureHistory.average.shift();
+    }
+
+    // Update chart
+    if (temperatureChart) {
+        temperatureChart.data.labels = temperatureHistory.labels;
+        temperatureChart.data.datasets[0].data = temperatureHistory.tank1;
+        temperatureChart.data.datasets[1].data = temperatureHistory.tank2;
+        temperatureChart.data.datasets[2].data = temperatureHistory.tank3;
+        temperatureChart.data.datasets[3].data = temperatureHistory.average;
+        temperatureChart.update('none'); // Update without animation for smooth updates
+    }
+}
+
+/**
+ * Initialize temperature chart
+ */
+function initChart() {
+    const ctx = document.getElementById('temperatureChart');
+    if (!ctx) return;
+
+    temperatureChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: temperatureHistory.labels,
+            datasets: [
+                {
+                    label: 'Nádrž 1',
+                    data: temperatureHistory.tank1,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4
+                },
+                {
+                    label: 'Nádrž 2',
+                    data: temperatureHistory.tank2,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4
+                },
+                {
+                    label: 'Nádrž 3',
+                    data: temperatureHistory.tank3,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    tension: 0.4
+                },
+                {
+                    label: 'Průměr',
+                    data: temperatureHistory.average,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    title: {
+                        display: true,
+                        text: 'Teplota (°C)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Čas'
+                    }
+                }
+            }
+        }
+    });
+}
+
+/**
+ * Fetch initial data
+ */
+async function fetchInitialData() {
+    try {
+        // Fetch current temperature
+        const tempData = await utils.apiCall('/api/temperature');
+        updateTemperatureDisplay(tempData);
+        updateTemperatureChart(tempData);
+
+        // Fetch current status
+        const statusData = await utils.apiCall('/api/status');
+        updateStatusDisplay(statusData);
+    } catch (error) {
+        console.error('Error fetching initial data:', error);
+        utils.showNotification('Chyba načítání dat', 'error');
+    }
+}
+
+/**
+ * Initialize dashboard
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Dashboard initializing...');
+
+    // Initialize chart
+    initChart();
+
+    // Fetch initial data
+    fetchInitialData();
+
+    // Initialize WebSocket for real-time updates
+    initWebSocket();
+
+    // Refresh data periodically as fallback
+    setInterval(fetchInitialData, 30000); // Every 30 seconds
+});

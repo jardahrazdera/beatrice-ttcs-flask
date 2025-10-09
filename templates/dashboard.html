@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Řízení ohřevu vody{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h2>Přehled systému</h2>
+
+    <!-- Status Cards -->
+    <div class="status-grid">
+        <!-- Temperature Cards -->
+        <div class="card">
+            <h3>Nádrž 1</h3>
+            <div class="temp-display" id="temp1">
+                <span class="temp-value">--</span>
+                <span class="temp-unit">°C</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Nádrž 2</h3>
+            <div class="temp-display" id="temp2">
+                <span class="temp-value">--</span>
+                <span class="temp-unit">°C</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Nádrž 3</h3>
+            <div class="temp-display" id="temp3">
+                <span class="temp-value">--</span>
+                <span class="temp-unit">°C</span>
+            </div>
+        </div>
+
+        <div class="card card-highlight">
+            <h3>Průměrná teplota</h3>
+            <div class="temp-display" id="temp-avg">
+                <span class="temp-value">--</span>
+                <span class="temp-unit">°C</span>
+            </div>
+        </div>
+
+        <!-- Control Status Cards -->
+        <div class="card">
+            <h3>Topení</h3>
+            <div class="status-indicator">
+                <span class="status-dot" id="heating-status"></span>
+                <span class="status-text" id="heating-text">Vypnuto</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Oběhové čerpadlo</h3>
+            <div class="status-indicator">
+                <span class="status-dot" id="pump-status"></span>
+                <span class="status-text" id="pump-text">Vypnuto</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Nastavená teplota</h3>
+            <div class="temp-display">
+                <span class="temp-value" id="setpoint">--</span>
+                <span class="temp-unit">°C</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Hystereze</h3>
+            <div class="temp-display">
+                <span class="temp-value" id="hysteresis">--</span>
+                <span class="temp-unit">°C</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Temperature Chart -->
+    <div class="card chart-card">
+        <h3>Historie teplot</h3>
+        <canvas id="temperatureChart"></canvas>
+    </div>
+
+    <!-- System Messages -->
+    <div class="card">
+        <h3>Systémové zprávy</h3>
+        <div id="system-messages" class="message-list">
+            <p class="message-empty">Žádné zprávy</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}
