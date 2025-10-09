@@ -18,6 +18,7 @@ from config import Config, SystemConfig
 from control import TemperatureController
 from evok_mock import create_evok_client
 from auth import check_auth, requires_auth
+from database import Database
 
 # Initialize Flask application
 app = Flask(__name__)
@@ -41,6 +42,9 @@ app.logger.info('Hot Water Tank Control System startup')
 
 # Initialize system configuration
 system_config = SystemConfig()
+
+# Initialize database
+db = Database('data.db')
 
 # Initialize controllers
 evok_client = None
@@ -255,6 +259,87 @@ def save_manual_override():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/history/temperature', methods=['GET'])
+@requires_auth
+def get_temperature_history():
+    """API endpoint for temperature history."""
+    try:
+        hours = int(request.args.get('hours', 24))
+        tank_number = request.args.get('tank')
+
+        if tank_number:
+            tank_number = int(tank_number)
+
+        history = db.get_temperature_history(hours=hours, tank_number=tank_number)
+        return jsonify({'success': True, 'data': history})
+
+    except Exception as e:
+        app.logger.error(f'Error getting temperature history: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/history/average', methods=['GET'])
+@requires_auth
+def get_average_history():
+    """API endpoint for averaged temperature history."""
+    try:
+        hours = int(request.args.get('hours', 24))
+        interval = int(request.args.get('interval', 5))
+
+        history = db.get_average_temperature_history(hours=hours, interval_minutes=interval)
+        return jsonify({'success': True, 'data': history})
+
+    except Exception as e:
+        app.logger.error(f'Error getting average history: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/history/events', methods=['GET'])
+@requires_auth
+def get_events_history():
+    """API endpoint for system events."""
+    try:
+        limit = int(request.args.get('limit', 100))
+        event_type = request.args.get('type')
+
+        events = db.get_recent_events(limit=limit, event_type=event_type)
+        return jsonify({'success': True, 'data': events})
+
+    except Exception as e:
+        app.logger.error(f'Error getting events: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/history/control', methods=['GET'])
+@requires_auth
+def get_control_history():
+    """API endpoint for control action history."""
+    try:
+        hours = int(request.args.get('hours', 24))
+
+        history = db.get_control_history(hours=hours)
+        return jsonify({'success': True, 'data': history})
+
+    except Exception as e:
+        app.logger.error(f'Error getting control history: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/statistics', methods=['GET'])
+@requires_auth
+def get_statistics():
+    """API endpoint for statistical summary."""
+    try:
+        hours = int(request.args.get('hours', 24))
+
+        stats = db.get_statistics(hours=hours)
+        return jsonify({'success': True, 'data': stats})
+
+    except Exception as e:
+        app.logger.error(f'Error getting statistics: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
 @socketio.on('connect')
 def handle_connect():
     """Handle WebSocket connection."""
@@ -328,8 +413,8 @@ def initialize_system():
         else:
             app.logger.info(f'Evok client initialized: {evok_host}:{evok_port}')
 
-        # Initialize temperature controller
-        temp_controller = TemperatureController(evok_client, system_config)
+        # Initialize temperature controller with database
+        temp_controller = TemperatureController(evok_client, system_config, db)
 
         # Start control loop
         temp_controller.start()
@@ -373,4 +458,4 @@ if __name__ == '__main__':
     initialize_system()
 
     # Run Flask-SocketIO server
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)

@@ -18,16 +18,18 @@ from config import SystemConfig
 class TemperatureController:
     """Main temperature control logic handler."""
 
-    def __init__(self, evok_client: EvokClient, config: SystemConfig):
+    def __init__(self, evok_client: EvokClient, config: SystemConfig, database=None):
         """
         Initialize temperature controller.
 
         Args:
             evok_client: Evok API client instance
             config: System configuration instance
+            database: Database instance for logging (optional)
         """
         self.evok = evok_client
         self.config = config
+        self.db = database
         self.logger = logging.getLogger(__name__)
 
         # Sensor IDs (to be discovered)
@@ -136,6 +138,16 @@ class TemperatureController:
             self.pump_active = True
             self.pump_shutdown_time = None
             self.logger.info("Heating and pump activated")
+
+            # Log control action
+            if self.db:
+                self.db.insert_control_action(
+                    'heating_on',
+                    True,
+                    True,
+                    self.average_temperature,
+                    self.config.get('setpoint')
+                )
         else:
             # Turn off heating, schedule pump shutdown
             self.evok.set_relay(relay_heating, False)
@@ -145,6 +157,16 @@ class TemperatureController:
             pump_delay = self.config.get('pump_delay', 60)
             self.pump_shutdown_time = datetime.now() + timedelta(seconds=pump_delay)
             self.logger.info(f"Heating deactivated, pump will stop in {pump_delay} seconds")
+
+            # Log control action
+            if self.db:
+                self.db.insert_control_action(
+                    'heating_off',
+                    False,
+                    True,  # Pump still on (delayed shutdown)
+                    self.average_temperature,
+                    self.config.get('setpoint')
+                )
 
     def update_pump_control(self):
         """Handle delayed pump shutdown."""
@@ -159,11 +181,25 @@ class TemperatureController:
         """Main control loop running in separate thread."""
         self.logger.info("Control loop started")
 
+        # Log startup event
+        if self.db:
+            self.db.insert_event('startup', 'Temperature controller started')
+
         while not self.stop_event.is_set():
             try:
                 # Read temperatures
                 self.temperatures = self.read_temperatures()
                 self.average_temperature = self.calculate_average_temperature()
+
+                # Log temperature readings to database
+                if self.db:
+                    readings = []
+                    for idx, (sensor_id, temp) in enumerate(self.temperatures.items()):
+                        if temp is not None:
+                            readings.append((sensor_id, temp, idx + 1))  # Tank number 1-3
+
+                    if readings:
+                        self.db.insert_multiple_readings(readings)
 
                 # Update control logic
                 self.update_heating_control()
@@ -175,7 +211,13 @@ class TemperatureController:
 
             except Exception as e:
                 self.logger.error(f"Error in control loop: {e}")
+                if self.db:
+                    self.db.insert_event('error', f'Control loop error: {str(e)}')
                 time.sleep(5)
+
+        # Log shutdown event
+        if self.db:
+            self.db.insert_event('shutdown', 'Temperature controller stopped')
 
         self.logger.info("Control loop stopped")
 

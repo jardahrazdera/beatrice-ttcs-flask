@@ -60,6 +60,8 @@ logs/
 *.sql
 *.sqlite
 *.db
+data.db
+config.json
 
 # Environment variables and secrets
 .env
