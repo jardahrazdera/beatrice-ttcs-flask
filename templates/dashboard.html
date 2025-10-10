@@ -10,6 +10,13 @@
 <div class="dashboard">
     <h2>Přehled systému</h2>
 
+    <!-- Manual Override Warning Banner -->
+    <div id="manual-override-warning" class="alert alert-danger" style="display: none;">
+        <strong>⚠️ VAROVÁNÍ: MANUÁLNÍ REŽIM AKTIVNÍ!</strong>
+        <p>Automatické řízení je vypnuto. Systém neřídí topení automaticky. Toto může způsobit přehřátí nebo podchlazení nádrží!</p>
+        <p><a href="{{ url_for('settings') }}" class="btn btn-warning">Přejít do nastavení</a></p>
+    </div>
+
     <!-- Status Cards -->
     <div class="status-grid">
         <!-- Temperature Cards -->

@@ -101,6 +101,16 @@ function updateStatusDisplay(data) {
     // Settings display
     utils.updateElement('setpoint', utils.formatTemperature(data.setpoint));
     utils.updateElement('hysteresis', utils.formatTemperature(data.hysteresis));
+
+    // Manual override warning banner
+    const warningBanner = document.getElementById('manual-override-warning');
+    if (warningBanner) {
+        if (data.manual_override) {
+            warningBanner.style.display = 'block';
+        } else {
+            warningBanner.style.display = 'none';
+        }
+    }
 }
 
 /**
@@ -210,6 +220,53 @@ function initChart() {
 }
 
 /**
+ * Load historical temperature data from database
+ */
+async function loadHistoricalData() {
+    try {
+        // Fetch last 2 hours of averaged data (5-minute intervals)
+        const response = await utils.apiCall('/api/history/average?hours=2&interval=5');
+
+        if (response.success && response.data && response.data.length > 0) {
+            // Clear existing data
+            temperatureHistory.labels = [];
+            temperatureHistory.tank1 = [];
+            temperatureHistory.tank2 = [];
+            temperatureHistory.tank3 = [];
+            temperatureHistory.average = [];
+
+            // Load historical data
+            response.data.forEach(point => {
+                const time = new Date(point.timestamp).toLocaleTimeString('cs-CZ', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                temperatureHistory.labels.push(time);
+                temperatureHistory.tank1.push(point.tank1 || null);
+                temperatureHistory.tank2.push(point.tank2 || null);
+                temperatureHistory.tank3.push(point.tank3 || null);
+                temperatureHistory.average.push(point.average || null);
+            });
+
+            // Update chart with historical data
+            if (temperatureChart) {
+                temperatureChart.data.labels = temperatureHistory.labels;
+                temperatureChart.data.datasets[0].data = temperatureHistory.tank1;
+                temperatureChart.data.datasets[1].data = temperatureHistory.tank2;
+                temperatureChart.data.datasets[2].data = temperatureHistory.tank3;
+                temperatureChart.data.datasets[3].data = temperatureHistory.average;
+                temperatureChart.update();
+            }
+
+            console.log('Historical data loaded:', response.data.length, 'points');
+        }
+    } catch (error) {
+        console.error('Error loading historical data:', error);
+        // Don't show notification - not critical for operation
+    }
+}
+
+/**
  * Fetch initial data
  */
 async function fetchInitialData() {
@@ -231,11 +288,14 @@ async function fetchInitialData() {
 /**
  * Initialize dashboard
  */
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     console.log('Dashboard initializing...');
 
     // Initialize chart
     initChart();
+
+    // Load historical data from database
+    await loadHistoricalData();
 
     // Fetch initial data
     fetchInitialData();

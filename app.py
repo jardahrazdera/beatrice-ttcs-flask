@@ -83,6 +83,13 @@ def logout():
     return redirect(url_for('login'))
 
 
+@app.route('/history')
+@requires_auth
+def history():
+    """History and statistics page."""
+    return render_template('history.html')
+
+
 @app.route('/settings', methods=['GET', 'POST'])
 @requires_auth
 def settings():
