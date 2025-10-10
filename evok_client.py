@@ -40,9 +40,17 @@ class EvokClient:
             List of sensor information dictionaries or None on error
         """
         try:
-            response = requests.get(f"{self.base_url}/json/1wdevice/all", timeout=5)
+            # Get all devices and filter for temperature sensors
+            response = requests.get(f"{self.base_url}/json/all", timeout=5)
             response.raise_for_status()
-            return response.json()
+            all_devices = response.json()
+
+            # Filter for temperature sensors (DS18B20)
+            sensors = [device for device in all_devices
+                      if device.get('dev') == 'temp' and device.get('type') == 'DS18B20']
+
+            self.logger.info(f"Found {len(sensors)} DS18B20 temperature sensors")
+            return sensors
         except Exception as e:
             self.logger.error(f"Error getting sensors: {e}")
             return None
@@ -66,12 +74,12 @@ class EvokClient:
             self.logger.error(f"Error reading temperature from {sensor_id}: {e}")
             return None
 
-    def set_relay(self, circuit: int, state: bool) -> bool:
+    def set_relay(self, circuit: str, state: bool) -> bool:
         """
         Set relay state.
 
         Args:
-            circuit: Relay circuit number
+            circuit: Relay circuit identifier (e.g., "1_01", "1_02")
             state: True for ON, False for OFF
 
         Returns:
@@ -91,12 +99,12 @@ class EvokClient:
             self.logger.error(f"Error setting relay {circuit}: {e}")
             return False
 
-    def get_relay_state(self, circuit: int) -> Optional[bool]:
+    def get_relay_state(self, circuit: str) -> Optional[bool]:
         """
         Get current relay state.
 
         Args:
-            circuit: Relay circuit number
+            circuit: Relay circuit identifier (e.g., "1_01", "1_02")
 
         Returns:
             True if ON, False if OFF, None on error

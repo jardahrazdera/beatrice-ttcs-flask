@@ -44,8 +44,8 @@ class SystemConfig:
         'sensor_timeout': 30,       # Sensor read timeout in seconds
         'update_interval': 5,       # Temperature update interval in seconds
         'max_temperature': 85.0,    # Maximum safe temperature in °C
-        'relay_heating': 1,         # Relay circuit for heating unit
-        'relay_pump': 2,            # Relay circuit for circulation pump
+        'relay_heating': '1_01',    # Relay circuit for heating unit (Unipi format: "1_01")
+        'relay_pump': '1_02',       # Relay circuit for circulation pump (Unipi format: "1_02")
         'manual_override': False,   # Manual control mode
         'manual_heating': False,    # Manual heating state
     }

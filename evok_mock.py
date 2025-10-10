@@ -26,11 +26,11 @@ class MockEvokClient:
         self.port = port
         self.logger = logging.getLogger(__name__)
 
-        # Simulate 3 temperature sensors
+        # Simulate 3 temperature sensors (matching real Evok format)
         self.mock_sensors = [
-            {'circuit': '28-00000a1b2c3d', 'typ': 'DS18B20'},
-            {'circuit': '28-00000a1b2c4e', 'typ': 'DS18B20'},
-            {'circuit': '28-00000a1b2c5f', 'typ': 'DS18B20'}
+            {'dev': 'temp', 'circuit': '28-00000a1b2c3d', 'type': 'DS18B20', 'value': 58.5, 'lost': False},
+            {'dev': 'temp', 'circuit': '28-00000a1b2c4e', 'type': 'DS18B20', 'value': 59.0, 'lost': False},
+            {'dev': 'temp', 'circuit': '28-00000a1b2c5f', 'type': 'DS18B20', 'value': 58.8, 'lost': False}
         ]
 
         # Simulate temperatures (will fluctuate realistically)
@@ -40,10 +40,10 @@ class MockEvokClient:
             '28-00000a1b2c5f': 58.8
         }
 
-        # Simulate relay states
+        # Simulate relay states (matching Unipi format)
         self.relay_states = {
-            1: False,  # Heating relay
-            2: False   # Pump relay
+            '1_01': False,  # Heating relay
+            '1_02': False   # Pump relay
         }
 
         # Heating simulation
@@ -86,12 +86,12 @@ class MockEvokClient:
         self.logger.warning(f'Mock: Unknown sensor {sensor_id}')
         return None
 
-    def set_relay(self, circuit: int, state: bool) -> bool:
+    def set_relay(self, circuit: str, state: bool) -> bool:
         """
         Set relay state (mocked).
 
         Args:
-            circuit: Relay circuit number
+            circuit: Relay circuit identifier (e.g., "1_01")
             state: True for ON, False for OFF
 
         Returns:
@@ -100,18 +100,18 @@ class MockEvokClient:
         self.relay_states[circuit] = state
 
         # Update heating simulation state
-        if circuit == 1:  # Heating relay
+        if circuit in ['1_01', '1']:  # Heating relay
             self.heating_active = state
 
         self.logger.info(f'Mock: Relay {circuit} set to {"ON" if state else "OFF"}')
         return True
 
-    def get_relay_state(self, circuit: int) -> Optional[bool]:
+    def get_relay_state(self, circuit: str) -> Optional[bool]:
         """
         Get current relay state (mocked).
 
         Args:
-            circuit: Relay circuit number
+            circuit: Relay circuit identifier (e.g., "1_01")
 
         Returns:
             Mocked relay state

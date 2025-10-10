@@ -54,11 +54,18 @@ class TemperatureController:
             True if sensors found, False otherwise
         """
         sensors = self.evok.get_all_sensors()
-        if sensors:
-            # Filter for temperature sensors (DS18B20)
-            self.sensor_ids = [s['circuit'] for s in sensors if s.get('typ') == 'DS18B20']
-            self.logger.info(f"Discovered {len(self.sensor_ids)} temperature sensors")
+        if sensors and len(sensors) > 0:
+            # Extract sensor circuit IDs (already filtered for DS18B20 by evok_client)
+            self.sensor_ids = [s['circuit'] for s in sensors]
+            self.logger.info(f"Discovered {len(self.sensor_ids)} temperature sensors: {self.sensor_ids}")
+
+            # Warn if fewer than 3 sensors
+            if len(self.sensor_ids) < 3:
+                self.logger.warning(f"Only {len(self.sensor_ids)} of 3 expected sensors found")
+
             return len(self.sensor_ids) > 0
+
+        self.logger.error("No temperature sensors found")
         return False
 
     def read_temperatures(self) -> Dict[str, Optional[float]]:
