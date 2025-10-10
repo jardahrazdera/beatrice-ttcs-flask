@@ -46,6 +46,9 @@ class TemperatureController:
         self.control_thread: Optional[Thread] = None
         self.stop_event = Event()
 
+        # Database cleanup tracking
+        self.last_cleanup: Optional[datetime] = None
+
     def discover_sensors(self) -> bool:
         """
         Discover 1-wire temperature sensors on the bus.
@@ -194,6 +197,19 @@ class TemperatureController:
 
         while not self.stop_event.is_set():
             try:
+                # Perform daily database cleanup (once per day)
+                if self.db:
+                    now = datetime.now()
+                    if self.last_cleanup is None or (now - self.last_cleanup).days >= 1:
+                        retention_days = self.config.get('data_retention_days', 365)
+                        self.logger.info(f"Performing daily database cleanup (keeping {retention_days} days)...")
+                        try:
+                            self.db.cleanup_old_data(days_to_keep=retention_days)
+                            self.last_cleanup = now
+                            self.logger.info("Database cleanup completed successfully")
+                        except Exception as cleanup_error:
+                            self.logger.error(f"Database cleanup error: {cleanup_error}")
+
                 # Read temperatures
                 self.temperatures = self.read_temperatures()
                 self.average_temperature = self.calculate_average_temperature()

@@ -333,6 +333,7 @@ class Database:
             days_to_keep: Number of days of data to keep
         """
         try:
+            # Delete old data within transaction
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
@@ -359,13 +360,17 @@ class Database:
                 ''', (cutoff_time,))
                 actions_deleted = cursor.rowcount
 
-                # Vacuum database to reclaim space
-                cursor.execute('VACUUM')
-
                 self.logger.info(
                     f"Cleaned up old data: {temp_deleted} temperatures, "
                     f"{events_deleted} events, {actions_deleted} actions"
                 )
+
+            # Vacuum database outside transaction to reclaim space
+            if temp_deleted > 0 or events_deleted > 0 or actions_deleted > 0:
+                conn = sqlite3.connect(self.db_path)
+                conn.execute('VACUUM')
+                conn.close()
+                self.logger.info("Database vacuumed successfully")
 
         except Exception as e:
             self.logger.error(f"Error cleaning up old data: {e}")
