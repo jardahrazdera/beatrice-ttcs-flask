@@ -5,6 +5,11 @@
 // Chart instance
 let historyChart;
 
+// Pagination state
+let temperatureData = [];
+let currentPage = 1;
+const rowsPerPage = 100;
+
 /**
  * Initialize tab switching
  */
@@ -108,8 +113,15 @@ async function loadTemperatureHistory() {
         const response = await utils.apiCall(`/api/history/average?hours=${hours}&interval=${interval}`);
 
         if (response.success && response.data) {
+            // Store data for pagination
+            temperatureData = response.data;
+            currentPage = 1;
+
+            // Update chart with all data
             updateTemperatureChart(response.data);
-            updateTemperatureTable(response.data);
+
+            // Update table with first page
+            updateTemperatureTable();
         }
     } catch (error) {
         console.error('Error loading temperature history:', error);
@@ -152,18 +164,26 @@ function updateTemperatureChart(data) {
 }
 
 /**
- * Update temperature table with data
+ * Update temperature table with paginated data
  */
-function updateTemperatureTable(data) {
+function updateTemperatureTable() {
     const tbody = document.getElementById('temp-table-body');
     if (!tbody) return;
 
-    if (data.length === 0) {
+    if (temperatureData.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" class="empty">Žádná data k zobrazení</td></tr>';
+        updatePaginationControls(0);
         return;
     }
 
-    tbody.innerHTML = data.map(point => {
+    // Calculate pagination
+    const totalPages = Math.ceil(temperatureData.length / rowsPerPage);
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = Math.min(startIndex + rowsPerPage, temperatureData.length);
+    const pageData = temperatureData.slice(startIndex, endIndex);
+
+    // Update table with current page data
+    tbody.innerHTML = pageData.map(point => {
         const time = new Date(point.timestamp).toLocaleString('cs-CZ');
         return `
             <tr>
@@ -175,6 +195,54 @@ function updateTemperatureTable(data) {
             </tr>
         `;
     }).join('');
+
+    // Update pagination controls
+    updatePaginationControls(totalPages);
+}
+
+/**
+ * Update pagination controls
+ */
+function updatePaginationControls(totalPages) {
+    const paginationDiv = document.getElementById('temp-pagination');
+    if (!paginationDiv) return;
+
+    if (totalPages <= 1) {
+        paginationDiv.style.display = 'none';
+        return;
+    }
+
+    paginationDiv.style.display = 'flex';
+
+    const startRecord = ((currentPage - 1) * rowsPerPage) + 1;
+    const endRecord = Math.min(currentPage * rowsPerPage, temperatureData.length);
+
+    paginationDiv.innerHTML = `
+        <button class="btn btn-secondary" id="prev-page" ${currentPage === 1 ? 'disabled' : ''}>
+            ← Předchozí
+        </button>
+        <span class="pagination-info">
+            Stránka ${currentPage} z ${totalPages} (zobrazeno ${startRecord}-${endRecord} z ${temperatureData.length} záznamů)
+        </span>
+        <button class="btn btn-secondary" id="next-page" ${currentPage === totalPages ? 'disabled' : ''}>
+            Další →
+        </button>
+    `;
+
+    // Add event listeners
+    document.getElementById('prev-page')?.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            updateTemperatureTable();
+        }
+    });
+
+    document.getElementById('next-page')?.addEventListener('click', () => {
+        if (currentPage < totalPages) {
+            currentPage++;
+            updateTemperatureTable();
+        }
+    });
 }
 
 /**
