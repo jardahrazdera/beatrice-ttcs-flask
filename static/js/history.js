@@ -140,11 +140,14 @@ function updateTemperatureChart(data) {
     const avgData = [];
 
     data.forEach(point => {
-        const time = new Date(point.timestamp).toLocaleString('cs-CZ', {
+        // Parse UTC timestamp and convert to CET
+        const utcDate = new Date(point.timestamp + 'Z'); // Add Z to indicate UTC
+        const time = utcDate.toLocaleString('cs-CZ', {
             month: '2-digit',
             day: '2-digit',
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
+            timeZone: 'Europe/Prague'
         });
         labels.push(time);
         tank1Data.push(point.tank1);
@@ -184,7 +187,17 @@ function updateTemperatureTable() {
 
     // Update table with current page data
     tbody.innerHTML = pageData.map(point => {
-        const time = new Date(point.timestamp).toLocaleString('cs-CZ');
+        // Parse UTC timestamp and convert to CET
+        const utcDate = new Date(point.timestamp + 'Z'); // Add Z to indicate UTC
+        const time = utcDate.toLocaleString('cs-CZ', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            timeZone: 'Europe/Prague'
+        });
         return `
             <tr>
                 <td>${time}</td>
@@ -317,7 +330,17 @@ function updateEventsTable(data) {
     }
 
     tbody.innerHTML = data.map(event => {
-        const time = new Date(event.timestamp).toLocaleString('cs-CZ');
+        // Parse UTC timestamp and convert to CET
+        const utcDate = new Date(event.timestamp + 'Z');
+        const time = utcDate.toLocaleString('cs-CZ', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            timeZone: 'Europe/Prague'
+        });
         const typeClass = event.event_type === 'error' ? 'badge-danger' :
                          event.event_type === 'warning' ? 'badge-warning' :
                          'badge-info';
@@ -362,7 +385,17 @@ function updateControlTable(data) {
     }
 
     tbody.innerHTML = data.map(action => {
-        const time = new Date(action.timestamp).toLocaleString('cs-CZ');
+        // Parse UTC timestamp and convert to CET
+        const utcDate = new Date(action.timestamp + 'Z');
+        const time = utcDate.toLocaleString('cs-CZ', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            timeZone: 'Europe/Prague'
+        });
         const heatingIcon = action.heating_state ? '🔥 Zapnuto' : '❄️ Vypnuto';
         const pumpIcon = action.pump_state ? '▶️ Zapnuto' : '⏸️ Vypnuto';
 
