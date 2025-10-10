@@ -601,4 +601,34 @@ body {
     .temp-display {
         font-size: 2rem;
     }
+
+    /* Alert boxes - mobile optimized */
+    .alert {
+        padding: 0.75rem;
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+    }
+
+    .alert strong {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .alert p {
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+        line-height: 1.4;
+    }
+
+    .alert p:last-child {
+        margin-bottom: 0;
+    }
+
+    .alert .btn {
+        font-size: 0.875rem;
+        padding: 0.5rem 1rem;
+        width: 100%;
+        margin-top: 0.5rem;
+    }
 }
