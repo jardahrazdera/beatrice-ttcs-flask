@@ -10,7 +10,13 @@ Group=pi
 WorkingDirectory=/opt/water-tank-control
 Environment="PATH=/opt/water-tank-control/venv/bin"
 Environment="USE_MOCK_EVOK=false"
-ExecStart=/opt/water-tank-control/venv/bin/python /opt/water-tank-control/app.py
+# Use gunicorn with eventlet worker for production (supports WebSocket)
+# For standalone mode (no nginx): --bind 0.0.0.0:5000
+# For nginx reverse proxy: --bind 127.0.0.1:5000
+# Note: Eventlet worker required for WebSocket support with Flask-SocketIO
+ExecStart=/opt/water-tank-control/venv/bin/gunicorn --worker-class eventlet -w 1 --bind 127.0.0.1:5000 app:app
+# Alternative if eventlet has issues: use gevent worker
+# ExecStart=/opt/water-tank-control/venv/bin/gunicorn --worker-class gevent -w 1 --bind 127.0.0.1:5000 app:app
 Restart=always
 RestartSec=10
 

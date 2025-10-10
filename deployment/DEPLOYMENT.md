@@ -260,20 +260,132 @@ Currently, passwords are hardcoded in `auth.py`. To change:
 
 ### Firewall Configuration
 
-If using firewall, allow port 5000:
+If using firewall, allow appropriate ports:
 
 ```bash
+# For standalone mode (direct access on port 5000)
 sudo ufw allow 5000/tcp
+
+# For nginx reverse proxy mode (HTTP on port 80)
+sudo ufw allow 80/tcp
+
+# For nginx with SSL (HTTPS on port 443)
+sudo ufw allow 443/tcp
 ```
 
-### HTTPS/SSL (Optional)
+## Nginx Reverse Proxy (Recommended for Production)
 
-For production, use reverse proxy (nginx) with SSL:
+Using nginx as a reverse proxy provides better performance, proper static file serving, and professional deployment.
 
-```bash
-sudo apt-get install nginx
-# Configure nginx as reverse proxy with SSL
-```
+### Basic HTTP Setup (Access Point Mode)
+
+This configuration is ideal when Unipi runs in WiFi Access Point mode for local access.
+
+1. **Install nginx**
+   ```bash
+   sudo apt-get update
+   sudo apt-get install -y nginx
+   ```
+
+2. **Copy nginx configuration**
+   ```bash
+   sudo cp /opt/water-tank-control/deployment/nginx-water-tank.conf \
+       /etc/nginx/sites-available/water-tank-control
+
+   # Remove default site
+   sudo rm /etc/nginx/sites-enabled/default
+
+   # Enable water tank control site
+   sudo ln -s /etc/nginx/sites-available/water-tank-control \
+       /etc/nginx/sites-enabled/
+   ```
+
+3. **Test nginx configuration**
+   ```bash
+   sudo nginx -t
+   ```
+
+4. **Restart nginx**
+   ```bash
+   sudo systemctl restart nginx
+   sudo systemctl enable nginx
+   ```
+
+5. **Restart application service** (now uses gunicorn on 127.0.0.1:5000)
+   ```bash
+   sudo systemctl restart water-tank-control
+   ```
+
+6. **Access web interface**
+   ```
+   http://<unipi-ip>
+   ```
+
+   Note: No port number needed! Nginx listens on port 80 (default HTTP port).
+
+   For Access Point mode, typical IP is: `http://192.168.4.1`
+
+### HTTPS/SSL Setup (Optional)
+
+For encrypted communication, especially if connecting over network:
+
+1. **Generate self-signed certificate**
+   ```bash
+   sudo mkdir -p /etc/nginx/ssl
+   sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+       -keyout /etc/nginx/ssl/water-tank.key \
+       -out /etc/nginx/ssl/water-tank.crt \
+       -subj "/C=CZ/ST=Prague/L=Prague/O=Home/CN=unipi.local"
+   ```
+
+2. **Use SSL configuration**
+   ```bash
+   # Remove HTTP-only configuration
+   sudo rm /etc/nginx/sites-enabled/water-tank-control
+
+   # Copy SSL configuration
+   sudo cp /opt/water-tank-control/deployment/nginx-water-tank-ssl.conf \
+       /etc/nginx/sites-available/water-tank-control
+
+   # Enable SSL site
+   sudo ln -s /etc/nginx/sites-available/water-tank-control \
+       /etc/nginx/sites-enabled/
+   ```
+
+3. **Test and restart nginx**
+   ```bash
+   sudo nginx -t
+   sudo systemctl restart nginx
+   ```
+
+4. **Access via HTTPS**
+   ```
+   https://<unipi-ip>
+   ```
+
+   Note: Browser will show security warning (self-signed certificate). This is normal - accept the exception.
+
+### Standalone Mode (Without Nginx)
+
+If you prefer direct access without nginx:
+
+1. **Modify systemd service**
+
+   Edit `/etc/systemd/system/water-tank-control.service` and change bind address:
+   ```
+   ExecStart=/opt/water-tank-control/venv/bin/gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:5000 app:app
+   ```
+
+2. **Reload and restart**
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl restart water-tank-control
+   ```
+
+3. **Access web interface**
+   ```
+   http://<unipi-ip>:5000
+   ```
 
 ## Updating
 
@@ -393,6 +505,77 @@ sudo systemctl restart water-tank-control
 2. Check relay wiring to heating unit and pump
 3. Verify relay circuit numbers in config.json match your hardware
 4. Note: Relay circuits use format "1_01", "1_02", etc. (not integers)
+
+### Nginx Issues
+
+1. **Nginx won't start**
+   ```bash
+   # Check nginx configuration syntax
+   sudo nginx -t
+
+   # Check nginx logs
+   sudo tail -f /var/log/nginx/error.log
+
+   # Check if port 80 is already in use
+   sudo netstat -tlnp | grep :80
+   ```
+
+2. **502 Bad Gateway error**
+
+   This means nginx can't connect to the backend application.
+
+   ```bash
+   # Check if water-tank-control service is running
+   sudo systemctl status water-tank-control
+
+   # Check if gunicorn is listening on correct port
+   sudo netstat -tlnp | grep 5000
+
+   # Check application logs
+   sudo journalctl -u water-tank-control -n 50
+   ```
+
+3. **WebSocket connection fails**
+
+   Real-time temperature updates won't work without WebSocket.
+
+   ```bash
+   # Check nginx error log for WebSocket errors
+   sudo tail -f /var/log/nginx/water-tank-error.log
+
+   # Verify Socket.IO endpoint is accessible
+   curl -I http://localhost/socket.io/
+
+   # Test backend WebSocket directly
+   curl -I http://localhost:5000/socket.io/
+   ```
+
+4. **Static files not loading (CSS/JS missing)**
+
+   ```bash
+   # Verify static files path exists
+   ls -la /opt/water-tank-control/static/
+
+   # Check nginx access log
+   sudo tail -f /var/log/nginx/water-tank-access.log
+
+   # Test static file directly
+   curl -I http://localhost/static/css/style.css
+   ```
+
+5. **Can't access from other devices (Access Point mode)**
+
+   ```bash
+   # Check if nginx is listening on all interfaces
+   sudo netstat -tlnp | grep :80
+   # Should show: 0.0.0.0:80 or :::80
+
+   # Check firewall
+   sudo ufw status
+
+   # Verify WiFi AP is working
+   ip addr show wlan0  # or relevant interface
+   ```
 
 ## Uninstallation
 

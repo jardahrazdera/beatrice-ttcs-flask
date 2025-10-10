@@ -128,8 +128,39 @@ sudo cp deployment/water-tank-control.service /etc/systemd/system/
 sudo systemctl daemon-reload
 echo ""
 
+# Ask about nginx installation
+read -p "Install and configure nginx reverse proxy? (Recommended for production) (y/N) " -n 1 -r
+echo
+INSTALL_NGINX=$REPLY
+if [[ $INSTALL_NGINX =~ ^[Yy]$ ]]; then
+    echo ""
+    echo "Installing nginx..."
+    sudo apt-get install -y nginx
+
+    echo "Configuring nginx..."
+    sudo cp $INSTALL_DIR/deployment/nginx-water-tank.conf /etc/nginx/sites-available/water-tank-control
+
+    # Remove default site
+    sudo rm -f /etc/nginx/sites-enabled/default
+
+    # Enable water tank control site
+    sudo ln -sf /etc/nginx/sites-available/water-tank-control /etc/nginx/sites-enabled/
+
+    # Test nginx configuration
+    if sudo nginx -t; then
+        echo "✓ Nginx configuration valid"
+        sudo systemctl enable nginx
+        sudo systemctl restart nginx
+        echo "✓ Nginx started"
+    else
+        echo "ERROR: Nginx configuration test failed"
+        echo "Please check the configuration manually"
+    fi
+    echo ""
+fi
+
 # Enable and start service
-read -p "Start service now? (y/N) " -n 1 -r
+read -p "Start application service now? (y/N) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     sudo systemctl enable $SERVICE_NAME
@@ -160,7 +191,13 @@ echo "Next steps:"
 echo "1. Edit configuration: nano $INSTALL_DIR/.env"
 echo "2. Check service status: sudo systemctl status $SERVICE_NAME"
 echo "3. View logs: sudo journalctl -u $SERVICE_NAME -f"
-echo "4. Access web interface: http://$IP_ADDR:5000"
+if [[ $INSTALL_NGINX =~ ^[Yy]$ ]]; then
+    echo "4. Access web interface: http://$IP_ADDR"
+    echo "   (Nginx reverse proxy on port 80)"
+else
+    echo "4. Access web interface: http://$IP_ADDR:5000"
+    echo "   (Direct access on port 5000)"
+fi
 echo ""
 echo "Default credentials:"
 echo "  Username: admin"
@@ -169,9 +206,15 @@ echo ""
 echo "IMPORTANT: Change default password after first login!"
 echo ""
 echo "Useful commands:"
-echo "  Start:   sudo systemctl start $SERVICE_NAME"
-echo "  Stop:    sudo systemctl stop $SERVICE_NAME"
-echo "  Restart: sudo systemctl restart $SERVICE_NAME"
-echo "  Status:  sudo systemctl status $SERVICE_NAME"
-echo "  Logs:    sudo journalctl -u $SERVICE_NAME -f"
+echo "  App Start:   sudo systemctl start $SERVICE_NAME"
+echo "  App Stop:    sudo systemctl stop $SERVICE_NAME"
+echo "  App Restart: sudo systemctl restart $SERVICE_NAME"
+echo "  App Status:  sudo systemctl status $SERVICE_NAME"
+echo "  App Logs:    sudo journalctl -u $SERVICE_NAME -f"
+if [[ $INSTALL_NGINX =~ ^[Yy]$ ]]; then
+    echo ""
+    echo "  Nginx Restart: sudo systemctl restart nginx"
+    echo "  Nginx Status:  sudo systemctl status nginx"
+    echo "  Nginx Logs:    sudo tail -f /var/log/nginx/water-tank-error.log"
+fi
 echo ""
