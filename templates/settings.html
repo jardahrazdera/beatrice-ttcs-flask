@@ -143,6 +143,31 @@
                 </div>
             </div>
         </div>
+
+        <!-- Database Management -->
+        <div class="card">
+            <h3>Správa databáze</h3>
+            <div class="alert alert-danger">
+                <strong>Varování:</strong> Smazání databáze je nevratné!
+            </div>
+
+            <div class="info-group">
+                <div class="info-item">
+                    <span class="info-label">Velikost databáze:</span>
+                    <span class="info-value" id="db-size">--</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Počet záznamů:</span>
+                    <span class="info-value" id="db-records">--</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <button id="delete-database-btn" class="btn btn-danger btn-block">
+                    Smazat všechna data z databáze
+                </button>
+            </div>
+        </div>
     </div>
 
     <div class="settings-footer">

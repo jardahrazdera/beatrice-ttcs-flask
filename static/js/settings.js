@@ -203,6 +203,79 @@ async function saveManualOverride(event) {
 }
 
 /**
+ * Load database statistics
+ */
+async function loadDatabaseStats() {
+    try {
+        const response = await utils.apiCall('/api/database/stats');
+
+        // Update database size
+        const sizeInMB = (response.size / (1024 * 1024)).toFixed(2);
+        utils.updateElement('db-size', `${sizeInMB} MB`);
+
+        // Update record count
+        const totalRecords = response.temperature_records + response.event_records + response.control_records;
+        utils.updateElement('db-records', totalRecords.toLocaleString('cs-CZ'));
+
+    } catch (error) {
+        console.error('Error loading database stats:', error);
+        utils.updateElement('db-size', '--');
+        utils.updateElement('db-records', '--');
+    }
+}
+
+/**
+ * Delete all database data
+ */
+async function deleteDatabase() {
+    // First confirmation
+    const confirmed1 = confirm(
+        'VAROVÁNÍ: Tato akce smaže všechna historická data z databáze!\n\n' +
+        'Budou smazány:\n' +
+        '- Všechny záznamy teplot\n' +
+        '- Všechny události systému\n' +
+        '- Všechna data řízení\n\n' +
+        'Tato akce je NEVRATNÁ!\n\n' +
+        'Opravdu chcete pokračovat?'
+    );
+
+    if (!confirmed1) {
+        return;
+    }
+
+    // Second confirmation
+    const confirmed2 = confirm(
+        'POSLEDNÍ VAROVÁNÍ!\n\n' +
+        'Jste si absolutně jisti, že chcete smazat všechna data?\n\n' +
+        'Tuto akci nelze vrátit zpět!'
+    );
+
+    if (!confirmed2) {
+        return;
+    }
+
+    try {
+        const response = await utils.apiCall('/api/database/delete', 'POST');
+
+        if (response.success) {
+            utils.showNotification(
+                `Databáze byla úspěšně vymazána. Smazáno: ${response.deleted.temperature} teplot, ` +
+                `${response.deleted.events} událostí, ${response.deleted.actions} akcí.`,
+                'success'
+            );
+
+            // Reload database stats
+            loadDatabaseStats();
+        } else {
+            utils.showNotification('Chyba při mazání databáze', 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting database:', error);
+        utils.showNotification('Chyba při mazání databáze: ' + error.message, 'error');
+    }
+}
+
+/**
  * Initialize settings page
  */
 document.addEventListener('DOMContentLoaded', () => {
@@ -210,6 +283,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load current settings
     loadSettings();
+
+    // Load database statistics
+    loadDatabaseStats();
 
     // Initialize WebSocket
     initWebSocket();
@@ -239,6 +315,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const manualOverride = document.getElementById('manual-override');
     if (manualOverride) {
         manualOverride.addEventListener('change', toggleManualOverride);
+    }
+
+    // Delete database button
+    const deleteDatabaseBtn = document.getElementById('delete-database-btn');
+    if (deleteDatabaseBtn) {
+        deleteDatabaseBtn.addEventListener('click', deleteDatabase);
     }
 
     // Refresh status periodically

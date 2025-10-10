@@ -391,6 +391,92 @@ class Database:
         except Exception as e:
             self.logger.error(f"Error cleaning up old data: {e}")
 
+    def get_database_info(self) -> Dict:
+        """
+        Get database file information and record counts.
+
+        Returns:
+            Dictionary with database statistics
+        """
+        import os
+
+        try:
+            # Get file size
+            size = os.path.getsize(self.db_path) if os.path.exists(self.db_path) else 0
+
+            # Get record counts
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+
+                cursor.execute("SELECT COUNT(*) FROM temperature_readings")
+                temp_count = cursor.fetchone()[0]
+
+                cursor.execute("SELECT COUNT(*) FROM system_events")
+                events_count = cursor.fetchone()[0]
+
+                cursor.execute("SELECT COUNT(*) FROM control_actions")
+                actions_count = cursor.fetchone()[0]
+
+                return {
+                    'size': size,
+                    'temperature_records': temp_count,
+                    'event_records': events_count,
+                    'control_records': actions_count
+                }
+
+        except Exception as e:
+            self.logger.error(f"Error getting database info: {e}")
+            return {
+                'size': 0,
+                'temperature_records': 0,
+                'event_records': 0,
+                'control_records': 0
+            }
+
+    def delete_all_data(self) -> Dict:
+        """
+        Delete all data from database tables.
+
+        Returns:
+            Dictionary with deletion statistics
+        """
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+
+                # Delete all temperature readings
+                cursor.execute("DELETE FROM temperature_readings")
+                temp_deleted = cursor.rowcount
+
+                # Delete all events
+                cursor.execute("DELETE FROM system_events")
+                events_deleted = cursor.rowcount
+
+                # Delete all control actions
+                cursor.execute("DELETE FROM control_actions")
+                actions_deleted = cursor.rowcount
+
+                self.logger.warning(
+                    f"Database cleared: {temp_deleted} temperatures, "
+                    f"{events_deleted} events, {actions_deleted} actions deleted"
+                )
+
+            # Vacuum database to reclaim space
+            conn = sqlite3.connect(self.db_path)
+            conn.execute('VACUUM')
+            conn.close()
+            self.logger.info("Database vacuumed after deletion")
+
+            return {
+                'temperature': temp_deleted,
+                'events': events_deleted,
+                'actions': actions_deleted
+            }
+
+        except Exception as e:
+            self.logger.error(f"Error deleting database data: {e}")
+            raise
+
     def get_statistics(self, hours: int = 24) -> Dict:
         """
         Get statistical summary of recent data.

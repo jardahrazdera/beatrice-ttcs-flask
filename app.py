@@ -347,6 +347,38 @@ def get_statistics():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/database/stats', methods=['GET'])
+@requires_auth
+def get_database_stats():
+    """API endpoint for database statistics."""
+    try:
+        stats = db.get_database_info()
+        return jsonify(stats)
+
+    except Exception as e:
+        app.logger.error(f'Error getting database stats: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/database/delete', methods=['POST'])
+@requires_auth
+def delete_database():
+    """API endpoint to delete all database data."""
+    try:
+        deleted = db.delete_all_data()
+
+        app.logger.warning('Database cleared via API request')
+        return jsonify({
+            'success': True,
+            'deleted': deleted,
+            'message': 'All database data has been deleted'
+        })
+
+    except Exception as e:
+        app.logger.error(f'Error deleting database: {e}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @socketio.on('connect')
 def handle_connect():
     """Handle WebSocket connection."""
