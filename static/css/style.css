@@ -632,4 +632,80 @@ body {
         padding: 0.4rem 0.8rem;
         width: 100%;
     }
+
+    /* History page - mobile optimized */
+    .tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .tab-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        white-space: nowrap;
+    }
+
+    .form-group-inline {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .form-group-inline label {
+        font-size: 0.875rem;
+    }
+
+    .form-group-inline .form-control {
+        width: 100%;
+        font-size: 0.875rem;
+    }
+
+    .form-group-inline .btn {
+        width: 100%;
+        font-size: 0.875rem;
+        padding: 0.5rem;
+    }
+
+    .chart-container {
+        height: 250px;
+        margin-bottom: 1rem;
+    }
+
+    .data-table {
+        font-size: 0.75rem;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 0.5rem 0.25rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .stat-card {
+        padding: 1rem;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+    }
+
+    .pagination {
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.75rem;
+    }
+
+    .pagination-info {
+        text-align: center;
+        font-size: 0.75rem;
+    }
+
+    .pagination .btn {
+        width: 100%;
+        font-size: 0.875rem;
+    }
 }
