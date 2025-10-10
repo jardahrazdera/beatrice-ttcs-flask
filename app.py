@@ -252,13 +252,17 @@ def save_manual_override():
 
         manual_override = bool(data.get('manual_override', False))
         manual_heating = bool(data.get('manual_heating', False))
+        manual_pump = bool(data.get('manual_pump', False))
 
         system_config.update({
             'manual_override': manual_override,
-            'manual_heating': manual_heating
+            'manual_heating': manual_heating,
+            'manual_pump': manual_pump
         })
 
         app.logger.warning(f'Manual override {"enabled" if manual_override else "disabled"}')
+        if manual_override:
+            app.logger.info(f'Manual controls: heating={manual_heating}, pump={manual_pump}')
         return jsonify({'success': True, 'message': 'Manual override updated'})
 
     except Exception as e:

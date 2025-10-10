@@ -85,25 +85,28 @@
                 <strong>Varování:</strong> Manuální režim deaktivuje automatické řízení!
             </div>
 
-            <form id="manual-override-form" class="settings-form">
-                <div class="form-group">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="manual-override" name="manual_override">
-                        Povolit manuální režim
-                    </label>
-                </div>
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="manual-override" name="manual_override">
+                    Povolit manuální režim
+                </label>
+            </div>
 
-                <div id="manual-controls" class="manual-controls" style="display: none;">
-                    <div class="form-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="manual-heating" name="manual_heating">
-                            Zapnout topení manuálně
-                        </label>
-                    </div>
-                </div>
+            <div id="manual-controls" class="manual-controls" style="display: none;">
+                <div class="control-buttons">
+                    <button id="toggle-heating-btn" class="btn btn-control" data-state="off">
+                        <span class="control-icon">🔥</span>
+                        <span class="control-label">Topení</span>
+                        <span class="control-status">VYPNUTO</span>
+                    </button>
 
-                <button type="submit" class="btn btn-warning">Potvrdit manuální režim</button>
-            </form>
+                    <button id="toggle-pump-btn" class="btn btn-control" data-state="off">
+                        <span class="control-icon">💧</span>
+                        <span class="control-label">Čerpadlo</span>
+                        <span class="control-status">VYPNUTO</span>
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Hardware Configuration -->

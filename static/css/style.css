@@ -334,8 +334,50 @@ body {
 }
 
 .manual-controls {
-    padding-left: 1rem;
-    border-left: 3px solid var(--warning-color);
+    margin-top: 1rem;
+}
+
+.control-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.btn-control {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1.5rem 1rem;
+    background-color: var(--secondary-color);
+    color: white;
+    border: 2px solid var(--secondary-color);
+    transition: all 0.3s;
+}
+
+.btn-control[data-state="on"] {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.btn-control:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+}
+
+.control-icon {
+    font-size: 2.5rem;
+}
+
+.control-label {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.control-status {
+    font-size: 0.875rem;
+    font-weight: 500;
+    opacity: 0.9;
 }
 
 .info-group {
@@ -707,5 +749,19 @@ body {
     .pagination .btn {
         width: 100%;
         font-size: 0.875rem;
+    }
+
+    /* Control buttons - mobile optimized */
+    .control-buttons {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .btn-control {
+        padding: 1rem 0.75rem;
+    }
+
+    .control-icon {
+        font-size: 2rem;
     }
 }

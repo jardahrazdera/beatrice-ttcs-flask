@@ -80,12 +80,14 @@ async function loadSettings() {
 
         // Manual override
         const manualOverride = document.getElementById('manual-override');
-        const manualHeating = document.getElementById('manual-heating');
         const manualControls = document.getElementById('manual-controls');
 
         manualOverride.checked = response.manual_override || false;
-        manualHeating.checked = response.manual_heating || false;
         manualControls.style.display = response.manual_override ? 'block' : 'none';
+
+        // Update button states
+        updateButtonState('heating', response.manual_heating || false);
+        updateButtonState('pump', response.manual_pump || false);
 
         // Hardware config
         utils.updateElement('relay-heating', response.relay_heating || 1);
@@ -159,45 +161,102 @@ async function saveSystemSettings(event) {
 }
 
 /**
- * Handle manual override toggle
+ * Update button visual state
  */
-function toggleManualOverride() {
-    const manualOverride = document.getElementById('manual-override');
-    const manualControls = document.getElementById('manual-controls');
+function updateButtonState(type, isOn) {
+    const btn = document.getElementById(`toggle-${type}-btn`);
+    if (!btn) return;
 
-    manualControls.style.display = manualOverride.checked ? 'block' : 'none';
+    const statusSpan = btn.querySelector('.control-status');
+
+    if (isOn) {
+        btn.setAttribute('data-state', 'on');
+        statusSpan.textContent = 'ZAPNUTO';
+    } else {
+        btn.setAttribute('data-state', 'off');
+        statusSpan.textContent = 'VYPNUTO';
+    }
 }
 
 /**
- * Save manual override settings
+ * Handle manual override toggle
  */
-async function saveManualOverride(event) {
-    event.preventDefault();
+async function toggleManualOverride() {
+    const manualOverride = document.getElementById('manual-override');
+    const manualControls = document.getElementById('manual-controls');
 
-    const manualOverride = document.getElementById('manual-override').checked;
-    const manualHeating = document.getElementById('manual-heating').checked;
-
-    if (manualOverride) {
+    if (manualOverride.checked) {
         const confirmed = confirm(
             'Varování: Aktivace manuálního režimu deaktivuje automatické řízení. ' +
             'Systém nebude automaticky regulovat teplotu. Pokračovat?'
         );
 
         if (!confirmed) {
+            manualOverride.checked = false;
             return;
         }
+
+        // Enable manual mode
+        manualControls.style.display = 'block';
+        await saveManualState();
+    } else {
+        // Disable manual mode
+        manualControls.style.display = 'none';
+
+        // Turn off all controls
+        updateButtonState('heating', false);
+        updateButtonState('pump', false);
+        await saveManualState();
     }
+}
+
+/**
+ * Toggle heating button
+ */
+async function toggleHeating() {
+    const manualOverride = document.getElementById('manual-override');
+    if (!manualOverride.checked) return;
+
+    const btn = document.getElementById('toggle-heating-btn');
+    const isOn = btn.getAttribute('data-state') === 'on';
+
+    updateButtonState('heating', !isOn);
+    await saveManualState();
+}
+
+/**
+ * Toggle pump button
+ */
+async function togglePump() {
+    const manualOverride = document.getElementById('manual-override');
+    if (!manualOverride.checked) return;
+
+    const btn = document.getElementById('toggle-pump-btn');
+    const isOn = btn.getAttribute('data-state') === 'on';
+
+    updateButtonState('pump', !isOn);
+    await saveManualState();
+}
+
+/**
+ * Save manual override state to server
+ */
+async function saveManualState() {
+    const manualOverride = document.getElementById('manual-override').checked;
+    const heatingBtn = document.getElementById('toggle-heating-btn');
+    const pumpBtn = document.getElementById('toggle-pump-btn');
 
     const formData = {
         manual_override: manualOverride,
-        manual_heating: manualHeating
+        manual_heating: heatingBtn.getAttribute('data-state') === 'on',
+        manual_pump: pumpBtn.getAttribute('data-state') === 'on'
     };
 
     try {
         await utils.apiCall('/api/settings/manual', 'POST', formData);
-        utils.showNotification('Manuální režim ' + (manualOverride ? 'aktivován' : 'deaktivován'), 'warning');
+        console.log('Manual state updated:', formData);
     } catch (error) {
-        console.error('Error saving manual override:', error);
+        console.error('Error saving manual state:', error);
         utils.showNotification('Chyba při ukládání nastavení', 'error');
     }
 }
@@ -306,15 +365,21 @@ document.addEventListener('DOMContentLoaded', () => {
         systemForm.addEventListener('submit', saveSystemSettings);
     }
 
-    const manualForm = document.getElementById('manual-override-form');
-    if (manualForm) {
-        manualForm.addEventListener('submit', saveManualOverride);
-    }
-
     // Manual override toggle
     const manualOverride = document.getElementById('manual-override');
     if (manualOverride) {
         manualOverride.addEventListener('change', toggleManualOverride);
+    }
+
+    // Manual control buttons
+    const heatingBtn = document.getElementById('toggle-heating-btn');
+    if (heatingBtn) {
+        heatingBtn.addEventListener('click', toggleHeating);
+    }
+
+    const pumpBtn = document.getElementById('toggle-pump-btn');
+    if (pumpBtn) {
+        pumpBtn.addEventListener('click', togglePump);
     }
 
     // Delete database button
