@@ -188,7 +188,19 @@ class TemperatureController:
                 )
 
     def update_pump_control(self):
-        """Handle delayed pump shutdown."""
+        """Handle pump control (manual or automatic delayed shutdown)."""
+        if self.config.get('manual_override'):
+            # Manual mode - use manual pump setting
+            target_pump = self.config.get('manual_pump', False)
+            if target_pump != self.pump_active:
+                relay_pump = self.config.get('relay_pump', 2)
+                self.evok.set_relay(relay_pump, target_pump)
+                self.pump_active = target_pump
+                self.pump_shutdown_time = None
+                self.logger.info(f"Pump manually {'activated' if target_pump else 'deactivated'}")
+            return
+
+        # Automatic mode - handle delayed shutdown
         if self.pump_shutdown_time and self._get_cet_now() >= self.pump_shutdown_time:
             relay_pump = self.config.get('relay_pump', 2)
             self.evok.set_relay(relay_pump, False)
@@ -286,8 +298,8 @@ class TemperatureController:
         return {
             'temperatures': self.temperatures,
             'average_temperature': self.average_temperature,
-            'heating_active': self.heating_active,
-            'pump_active': self.pump_active,
+            'heating': self.heating_active,
+            'pump': self.pump_active,
             'setpoint': self.config.get('setpoint'),
             'hysteresis': self.config.get('hysteresis'),
             'manual_override': self.config.get('manual_override'),
