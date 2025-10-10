@@ -112,11 +112,11 @@
             <div class="info-group">
                 <div class="info-item">
                     <span class="info-label">Relé topení:</span>
-                    <span class="info-value" id="relay-heating">1</span>
+                    <span class="info-value" id="relay-heating">1_01</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">Relé čerpadla:</span>
-                    <span class="info-value" id="relay-pump">2</span>
+                    <span class="info-value" id="relay-pump">1_02</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">Počet senzorů:</span>
@@ -152,6 +152,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script src="{{ url_for('static', filename='js/vendor/socket.io.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
 {% endblock %}
