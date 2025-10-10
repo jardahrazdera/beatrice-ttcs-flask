@@ -269,14 +269,14 @@ body {
 .status-indicator {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 1rem;
     justify-content: center;
-    padding: 1rem 0;
+    padding: 1.5rem 0;
 }
 
 .status-dot {
-    width: 1rem;
-    height: 1rem;
+    width: 1.5rem;
+    height: 1.5rem;
     border-radius: 50%;
     background-color: var(--secondary-color);
 }
@@ -292,8 +292,8 @@ body {
 }
 
 .status-text {
-    font-size: 1.125rem;
-    font-weight: 500;
+    font-size: 1.5rem;
+    font-weight: 600;
 }
 
 /* Chart Card */
