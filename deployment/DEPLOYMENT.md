@@ -129,16 +129,18 @@ Default settings are created automatically. Modify via web interface:
   "sensor_timeout": 30,
   "update_interval": 5,
   "max_temperature": 85.0,
-  "relay_heating": 1,
-  "relay_pump": 2
+  "relay_heating": "1_01",
+  "relay_pump": "1_02"
 }
 ```
 
 ### Hardware Configuration
 
 Verify relay assignments in Evok match your wiring:
-- **Relay 1**: Heating unit control
-- **Relay 2**: Circulation pump control
+- **Relay 1_01**: Heating unit control
+- **Relay 1_02**: Circulation pump control
+
+**Note**: Relay circuits use Unipi format with underscore (e.g., "1_01", "1_02", etc.)
 
 Update `config.json` if different:
 ```bash
@@ -199,10 +201,11 @@ Should show: `Active: active (running)`
 ### 2. Check Evok Communication
 
 ```bash
-# Test Evok API
-curl http://localhost:8080/json/1wdevice/all
+# Test Evok API - get all devices
+curl http://localhost:8080/json/all
 
-# Should return JSON with sensor information
+# Filter for temperature sensors
+curl http://localhost:8080/json/all | grep -A5 '"dev": "temp"'
 ```
 
 ### 3. Check Application Logs
@@ -345,11 +348,15 @@ sudo systemctl restart water-tank-control
 
 1. Check 1-wire devices:
    ```bash
-   curl http://localhost:8080/json/1wdevice/all
+   # Get all devices and look for temp sensors
+   curl http://localhost:8080/json/all | grep -A5 '"dev": "temp"'
+
+   # Or check specific sensor by circuit ID
+   curl http://localhost:8080/json/temp/289CD2A908000010
    ```
 
-2. Verify sensor connections
-3. Check Evok configuration
+2. Verify sensor connections to 1-wire bus
+3. Check Evok configuration and service status
 
 ### Web Interface Not Accessible
 
@@ -367,13 +374,25 @@ sudo systemctl restart water-tank-control
 
 ### Relays Not Responding
 
-1. Test relay via Evok:
+1. Test relay via Evok (use correct circuit format):
    ```bash
-   curl -X POST http://localhost:8080/json/ro/1 -d '{"value": 1}'
+   # Turn relay ON (circuit format: "1_01", "1_02", etc.)
+   curl -X POST http://localhost:8080/json/ro/1_01 \
+     -H "Content-Type: application/json" \
+     -d '{"value": 1}'
+
+   # Turn relay OFF
+   curl -X POST http://localhost:8080/json/ro/1_01 \
+     -H "Content-Type: application/json" \
+     -d '{"value": 0}'
+
+   # Check relay state
+   curl http://localhost:8080/json/ro/1_01
    ```
 
-2. Check relay wiring
-3. Verify relay circuit numbers in config
+2. Check relay wiring to heating unit and pump
+3. Verify relay circuit numbers in config.json match your hardware
+4. Note: Relay circuits use format "1_01", "1_02", etc. (not integers)
 
 ## Uninstallation
 
