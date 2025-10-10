@@ -26,6 +26,11 @@ class Database:
         self.logger = logging.getLogger(__name__)
         self._init_database()
 
+    @staticmethod
+    def _get_utc_now() -> datetime:
+        """Get current UTC time (SQLite uses UTC for CURRENT_TIMESTAMP)."""
+        return datetime.utcnow()
+
     @contextmanager
     def _get_connection(self):
         """Context manager for database connections."""
@@ -198,7 +203,7 @@ class Database:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
-                cutoff_time = datetime.now() - timedelta(hours=hours)
+                cutoff_time = self._get_utc_now() - timedelta(hours=hours)
 
                 if tank_number is not None:
                     cursor.execute('''
@@ -235,7 +240,7 @@ class Database:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
-                cutoff_time = datetime.now() - timedelta(hours=hours)
+                cutoff_time = self._get_utc_now() - timedelta(hours=hours)
 
                 cursor.execute(f'''
                     SELECT
@@ -310,7 +315,7 @@ class Database:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
-                cutoff_time = datetime.now() - timedelta(hours=hours)
+                cutoff_time = self._get_utc_now() - timedelta(hours=hours)
 
                 cursor.execute('''
                     SELECT * FROM control_actions
@@ -337,7 +342,7 @@ class Database:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
-                cutoff_time = datetime.now() - timedelta(days=days_to_keep)
+                cutoff_time = self._get_utc_now() - timedelta(days=days_to_keep)
 
                 # Clean up old temperature readings
                 cursor.execute('''
@@ -389,7 +394,7 @@ class Database:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
-                cutoff_time = datetime.now() - timedelta(hours=hours)
+                cutoff_time = self._get_utc_now() - timedelta(hours=hours)
 
                 # Overall temperature statistics
                 cursor.execute('''
@@ -458,7 +463,7 @@ class Database:
 
                 # If heating is still on, count until now
                 if heating_on and last_heating_on_time:
-                    heating_on_time += (datetime.now() - last_heating_on_time).total_seconds()
+                    heating_on_time += (self._get_utc_now() - last_heating_on_time).total_seconds()
 
                 # Estimate pump time (same as heating time + pump_delay)
                 pump_on_time = heating_on_time
