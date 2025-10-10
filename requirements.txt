@@ -12,7 +12,7 @@ requests==2.31.0
 
 # WSGI server for production
 gunicorn==21.2.0
-eventlet==0.33.3
+eventlet>=0.33.3,<0.36  # Python 3.11+ compatible, <0.36 for stability
 
 # Development dependencies
 python-dotenv==1.0.0

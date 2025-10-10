@@ -12,6 +12,7 @@ This guide explains how to deploy the Hot Water Tank Control System to a Raspber
 
 ### Software
 - Raspberry Pi OS (32-bit or 64-bit)
+- **Python 3.9 or newer** (Python 3.11 recommended for best compatibility)
 - Evok installed and running
 - SSH access enabled
 - Git installed
