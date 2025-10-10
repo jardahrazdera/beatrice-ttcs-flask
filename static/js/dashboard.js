@@ -286,6 +286,33 @@ async function fetchInitialData() {
 }
 
 /**
+ * Update current time display
+ */
+function updateCurrentTime() {
+    const now = new Date();
+
+    const dateElement = document.getElementById('current-date');
+    const timeElement = document.getElementById('current-time');
+
+    if (dateElement) {
+        dateElement.textContent = now.toLocaleDateString('cs-CZ', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    }
+
+    if (timeElement) {
+        timeElement.textContent = now.toLocaleTimeString('cs-CZ', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    }
+}
+
+/**
  * Initialize dashboard
  */
 document.addEventListener('DOMContentLoaded', async () => {
@@ -302,6 +329,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Initialize WebSocket for real-time updates
     initWebSocket();
+
+    // Update current time immediately and then every second
+    updateCurrentTime();
+    setInterval(updateCurrentTime, 1000);
 
     // Refresh data periodically as fallback
     setInterval(fetchInitialData, 30000); // Every 30 seconds

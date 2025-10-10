@@ -8,7 +8,13 @@
 
 {% block content %}
 <div class="dashboard">
-    <h2>Přehled systému</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="margin: 0;">Přehled systému</h2>
+        <div style="text-align: right;">
+            <div id="current-date" style="font-size: 1rem; color: var(--text-secondary);"></div>
+            <div id="current-time" style="font-size: 1.5rem; font-weight: 600; color: var(--text-primary);"></div>
+        </div>
+    </div>
 
     <!-- Manual Override Warning Banner -->
     <div id="manual-override-warning" class="alert alert-danger" style="display: none;">
