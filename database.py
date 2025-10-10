@@ -7,6 +7,7 @@ temperature readings, system events, and control actions.
 
 import sqlite3
 import logging
+import pytz
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Tuple
 from contextlib import contextmanager
@@ -27,9 +28,19 @@ class Database:
         self._init_database()
 
     @staticmethod
-    def _get_utc_now() -> datetime:
-        """Get current UTC time (SQLite uses UTC for CURRENT_TIMESTAMP)."""
-        return datetime.utcnow()
+    def _get_cet_now() -> datetime:
+        """Get current time in CET/CEST timezone with automatic DST."""
+        cet = pytz.timezone('Europe/Prague')
+        return datetime.now(cet)
+
+    @staticmethod
+    def _cet_to_utc(dt: datetime) -> datetime:
+        """Convert CET/CEST datetime to UTC for database queries."""
+        if dt.tzinfo is None:
+            # Assume it's CET if naive
+            cet = pytz.timezone('Europe/Prague')
+            dt = cet.localize(dt)
+        return dt.astimezone(pytz.utc).replace(tzinfo=None)
 
     @contextmanager
     def _get_connection(self):
@@ -203,7 +214,7 @@ class Database:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
-                cutoff_time = self._get_utc_now() - timedelta(hours=hours)
+                cutoff_time = self._cet_to_utc(self._get_cet_now() - timedelta(hours=hours))
 
                 if tank_number is not None:
                     cursor.execute('''
@@ -240,7 +251,7 @@ class Database:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
-                cutoff_time = self._get_utc_now() - timedelta(hours=hours)
+                cutoff_time = self._cet_to_utc(self._get_cet_now() - timedelta(hours=hours))
 
                 cursor.execute(f'''
                     SELECT
@@ -315,7 +326,7 @@ class Database:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
-                cutoff_time = self._get_utc_now() - timedelta(hours=hours)
+                cutoff_time = self._cet_to_utc(self._get_cet_now() - timedelta(hours=hours))
 
                 cursor.execute('''
                     SELECT * FROM control_actions
@@ -342,7 +353,7 @@ class Database:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
-                cutoff_time = self._get_utc_now() - timedelta(days=days_to_keep)
+                cutoff_time = self._cet_to_utc(self._get_cet_now() - timedelta(days=days_to_keep))
 
                 # Clean up old temperature readings
                 cursor.execute('''
@@ -394,7 +405,7 @@ class Database:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
-                cutoff_time = self._get_utc_now() - timedelta(hours=hours)
+                cutoff_time = self._cet_to_utc(self._get_cet_now() - timedelta(hours=hours))
 
                 # Overall temperature statistics
                 cursor.execute('''
@@ -461,9 +472,10 @@ class Database:
                         if last_heating_on_time:
                             heating_on_time += (timestamp - last_heating_on_time).total_seconds()
 
-                # If heating is still on, count until now
+                # If heating is still on, count until now (use UTC since timestamps are UTC)
                 if heating_on and last_heating_on_time:
-                    heating_on_time += (self._get_utc_now() - last_heating_on_time).total_seconds()
+                    now_utc = self._cet_to_utc(self._get_cet_now())
+                    heating_on_time += (now_utc - last_heating_on_time).total_seconds()
 
                 # Estimate pump time (same as heating time + pump_delay)
                 pump_on_time = heating_on_time

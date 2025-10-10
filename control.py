@@ -7,6 +7,7 @@ hysteresis-based heating control, and circulation pump management.
 
 import logging
 import time
+import pytz
 from typing import List, Optional, Dict
 from threading import Thread, Event
 from datetime import datetime, timedelta
@@ -17,6 +18,9 @@ from config import SystemConfig
 
 class TemperatureController:
     """Main temperature control logic handler."""
+
+    # CET timezone for time operations
+    CET = pytz.timezone('Europe/Prague')
 
     def __init__(self, evok_client: EvokClient, config: SystemConfig, database=None):
         """
@@ -48,6 +52,11 @@ class TemperatureController:
 
         # Database cleanup tracking
         self.last_cleanup: Optional[datetime] = None
+
+    @staticmethod
+    def _get_cet_now() -> datetime:
+        """Get current time in CET/CEST timezone with automatic DST."""
+        return datetime.now(TemperatureController.CET)
 
     def discover_sensors(self) -> bool:
         """
@@ -165,7 +174,7 @@ class TemperatureController:
 
             # Schedule pump shutdown with delay
             pump_delay = self.config.get('pump_delay', 60)
-            self.pump_shutdown_time = datetime.now() + timedelta(seconds=pump_delay)
+            self.pump_shutdown_time = self._get_cet_now() + timedelta(seconds=pump_delay)
             self.logger.info(f"Heating deactivated, pump will stop in {pump_delay} seconds")
 
             # Log control action
@@ -180,7 +189,7 @@ class TemperatureController:
 
     def update_pump_control(self):
         """Handle delayed pump shutdown."""
-        if self.pump_shutdown_time and datetime.now() >= self.pump_shutdown_time:
+        if self.pump_shutdown_time and self._get_cet_now() >= self.pump_shutdown_time:
             relay_pump = self.config.get('relay_pump', 2)
             self.evok.set_relay(relay_pump, False)
             self.pump_active = False
@@ -199,7 +208,7 @@ class TemperatureController:
             try:
                 # Perform daily database cleanup (once per day)
                 if self.db:
-                    now = datetime.now()
+                    now = self._get_cet_now()
                     if self.last_cleanup is None or (now - self.last_cleanup).days >= 1:
                         retention_days = self.config.get('data_retention_days', 365)
                         self.logger.info(f"Performing daily database cleanup (keeping {retention_days} days)...")
