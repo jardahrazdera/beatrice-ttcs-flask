@@ -229,7 +229,7 @@ class Database:
             interval_minutes: Grouping interval in minutes
 
         Returns:
-            List of averaged temperature readings
+            List of averaged temperature readings with separate tank values
         """
         try:
             with self._get_connection() as conn:
@@ -242,15 +242,15 @@ class Database:
                         datetime(
                             (strftime('%s', timestamp) / ({interval_minutes} * 60)) * ({interval_minutes} * 60),
                             'unixepoch'
-                        ) as time_bucket,
-                        AVG(temperature) as avg_temperature,
-                        MIN(temperature) as min_temperature,
-                        MAX(temperature) as max_temperature,
-                        COUNT(*) as reading_count
+                        ) as timestamp,
+                        AVG(CASE WHEN tank_number = 1 THEN temperature END) as tank1,
+                        AVG(CASE WHEN tank_number = 2 THEN temperature END) as tank2,
+                        AVG(CASE WHEN tank_number = 3 THEN temperature END) as tank3,
+                        AVG(temperature) as average
                     FROM temperature_readings
                     WHERE timestamp >= ?
-                    GROUP BY time_bucket
-                    ORDER BY time_bucket ASC
+                    GROUP BY timestamp
+                    ORDER BY timestamp ASC
                 ''', (cutoff_time,))
 
                 rows = cursor.fetchall()
@@ -391,32 +391,87 @@ class Database:
 
                 cutoff_time = datetime.now() - timedelta(hours=hours)
 
-                # Temperature statistics
+                # Overall temperature statistics
                 cursor.execute('''
                     SELECT
-                        COUNT(*) as total_readings,
-                        AVG(temperature) as avg_temp,
-                        MIN(temperature) as min_temp,
-                        MAX(temperature) as max_temp
+                        COUNT(*) as reading_count,
+                        AVG(temperature) as avg_temperature,
+                        MIN(temperature) as min_temperature,
+                        MAX(temperature) as max_temperature
                     FROM temperature_readings
                     WHERE timestamp >= ?
                 ''', (cutoff_time,))
 
-                temp_stats = dict(cursor.fetchone())
+                overall_stats = dict(cursor.fetchone())
 
-                # Control statistics
+                # Per-tank temperature statistics
                 cursor.execute('''
                     SELECT
-                        SUM(CASE WHEN heating_state = 1 THEN 1 ELSE 0 END) as heating_on_count,
-                        SUM(CASE WHEN heating_state = 0 THEN 1 ELSE 0 END) as heating_off_count
-                    FROM control_actions
-                    WHERE timestamp >= ?
+                        tank_number,
+                        COUNT(*) as reading_count,
+                        AVG(temperature) as avg_temperature,
+                        MIN(temperature) as min_temperature,
+                        MAX(temperature) as max_temperature
+                    FROM temperature_readings
+                    WHERE timestamp >= ? AND tank_number IS NOT NULL
+                    GROUP BY tank_number
+                    ORDER BY tank_number
                 ''', (cutoff_time,))
 
-                control_stats = dict(cursor.fetchone())
+                tanks = [dict(row) for row in cursor.fetchall()]
+
+                # Control statistics - calculate time based on state changes
+                cursor.execute('''
+                    SELECT
+                        action_type,
+                        timestamp
+                    FROM control_actions
+                    WHERE timestamp >= ?
+                    ORDER BY timestamp ASC
+                ''', (cutoff_time,))
+
+                actions = cursor.fetchall()
+
+                # Calculate heating/pump on time
+                heating_on_time = 0
+                pump_on_time = 0
+                heating_cycles = 0
+
+                heating_on = False
+                pump_on = False
+                last_heating_on_time = None
+                last_pump_on_time = None
+
+                for action in actions:
+                    action_dict = dict(action)
+                    action_type = action_dict['action_type']
+                    timestamp = datetime.fromisoformat(action_dict['timestamp'])
+
+                    if action_type == 'heating_on':
+                        heating_on = True
+                        heating_cycles += 1
+                        last_heating_on_time = timestamp
+                    elif action_type == 'heating_off' and heating_on:
+                        heating_on = False
+                        if last_heating_on_time:
+                            heating_on_time += (timestamp - last_heating_on_time).total_seconds()
+
+                # If heating is still on, count until now
+                if heating_on and last_heating_on_time:
+                    heating_on_time += (datetime.now() - last_heating_on_time).total_seconds()
+
+                # Estimate pump time (same as heating time + pump_delay)
+                pump_on_time = heating_on_time
+
+                control_stats = {
+                    'heating_on_time': heating_on_time,
+                    'pump_on_time': pump_on_time,
+                    'heating_cycles': heating_cycles
+                }
 
                 return {
-                    'temperature': temp_stats,
+                    'overall': overall_stats,
+                    'tanks': tanks,
                     'control': control_stats,
                     'period_hours': hours
                 }

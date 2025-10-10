@@ -304,7 +304,7 @@ function updateControlTable(data) {
                 <td><span class="badge badge-info">${action.action_type}</span></td>
                 <td>${heatingIcon}</td>
                 <td>${pumpIcon}</td>
-                <td>${utils.formatTemperature(action.temperature)}</td>
+                <td>${utils.formatTemperature(action.average_temperature)}</td>
                 <td>${utils.formatTemperature(action.setpoint)}</td>
             </tr>
         `;
