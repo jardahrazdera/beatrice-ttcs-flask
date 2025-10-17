@@ -310,7 +310,13 @@ Super admin password is required for:
 - **Manual Override**: Enabling/disabling manual control of heating and pump
 - **Database Deletion**: Erasing all historical data
 
-These features are locked with a 🔒 icon in the web interface and require the super admin password to unlock.
+**User Interface Behavior:**
+- Sections are locked with a 🔒 icon and require super admin password to unlock
+- After unlocking (🔓), sections show a "Zamknout" (Lock) button
+- Unlocked state persists throughout the browser session
+- Sections can be manually locked using the "Zamknout" button
+- All sections automatically lock on logout
+- **Safety Feature**: Manual mode automatically switches to automatic mode when locked or on logout
 
 ### Firewall Configuration
 
