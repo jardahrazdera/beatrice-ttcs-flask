@@ -46,7 +46,10 @@ This guide explains how to deploy the Hot Water Tank Control System to a Raspber
    - Install Python dependencies
    - Generate secure secret key
    - Install systemd service (automatically configured for current user)
+   - Optionally configure nginx (with automatic conflict detection)
    - Optionally start the service
+
+   **Note:** The script automatically detects and resolves nginx conflicts (e.g., evok-web, duplicate default_server directives)
 
 4. **Access Web Interface**
    ```
@@ -591,7 +594,34 @@ sudo systemctl restart water-tank-control
 
 ### Nginx Issues
 
-1. **Nginx won't start**
+1. **Nginx won't start - duplicate default_server error**
+
+   Error: `a duplicate default server for 0.0.0.0:80`
+
+   This means multiple nginx configurations are trying to use `default_server`. Common causes:
+   - evok-web package installed
+   - Multiple site configurations with default_server
+
+   **Solution:**
+   ```bash
+   # Find conflicting configurations
+   sudo grep -r "default_server" /etc/nginx/sites-enabled/
+
+   # Option 1: Remove evok-web (if installed)
+   sudo apt-get remove evok-web
+
+   # Option 2: Disable conflicting sites
+   sudo rm /etc/nginx/sites-enabled/evok
+   sudo rm /etc/nginx/sites-enabled/default
+
+   # Test and restart
+   sudo nginx -t
+   sudo systemctl restart nginx
+   ```
+
+   **Note:** The automated installation script handles this automatically.
+
+2. **Nginx won't start - general issues**
    ```bash
    # Check nginx configuration syntax
    sudo nginx -t
@@ -603,7 +633,7 @@ sudo systemctl restart water-tank-control
    sudo netstat -tlnp | grep :80
    ```
 
-2. **502 Bad Gateway error**
+3. **502 Bad Gateway error**
 
    This means nginx can't connect to the backend application.
 
@@ -618,7 +648,7 @@ sudo systemctl restart water-tank-control
    sudo journalctl -u water-tank-control -n 50
    ```
 
-3. **WebSocket connection fails**
+4. **WebSocket connection fails**
 
    Real-time temperature updates won't work without WebSocket.
 
@@ -633,7 +663,7 @@ sudo systemctl restart water-tank-control
    curl -I http://localhost:5000/socket.io/
    ```
 
-4. **Static files not loading (CSS/JS missing)**
+5. **Static files not loading (CSS/JS missing)**
 
    ```bash
    # Verify static files path exists
@@ -646,7 +676,7 @@ sudo systemctl restart water-tank-control
    curl -I http://localhost/static/css/style.css
    ```
 
-5. **Can't access from other devices (Access Point mode)**
+6. **Can't access from other devices (Access Point mode)**
 
    ```bash
    # Check if nginx is listening on all interfaces
