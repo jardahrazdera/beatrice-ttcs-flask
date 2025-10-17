@@ -5,6 +5,10 @@
 // WebSocket connection
 let socket;
 
+// Super admin authentication state (persistent in session)
+let manualOverridePassword = sessionStorage.getItem('manualOverridePassword') || null;
+let databasePassword = sessionStorage.getItem('databasePassword') || null;
+
 /**
  * Initialize WebSocket connection
  */
@@ -60,6 +64,196 @@ function updateCurrentStatus(data) {
 }
 
 /**
+ * Unlock manual override section with super admin password
+ */
+async function unlockManualOverride() {
+    const passwordInput = document.getElementById('manual-super-admin-password');
+    const password = passwordInput.value;
+
+    if (!password) {
+        utils.showNotification('Zadejte super admin heslo', 'error');
+        return;
+    }
+
+    // Store password in session storage and memory
+    manualOverridePassword = password;
+    sessionStorage.setItem('manualOverridePassword', password);
+
+    // Apply unlocked state
+    applyManualOverrideUnlockedState();
+
+    // Clear password field (for security)
+    passwordInput.value = '';
+
+    utils.showNotification('Manuální ovládání odemčeno', 'success');
+}
+
+/**
+ * Lock manual override section
+ */
+async function lockManualOverride() {
+    // Disable manual mode before locking (for safety)
+    const manualOverrideCheckbox = document.getElementById('manual-override');
+    if (manualOverrideCheckbox && manualOverrideCheckbox.checked) {
+        // Switch back to automatic mode using the stored password (still valid)
+        if (manualOverridePassword) {
+            try {
+                await utils.apiCall('/api/settings/manual', 'POST', {
+                    manual_override: false,
+                    manual_heating: false,
+                    manual_pump: false,
+                    super_admin_password: manualOverridePassword
+                });
+            } catch (error) {
+                console.error('Error disabling manual mode during lock:', error);
+            }
+        }
+    }
+
+    // Clear password from storage and memory
+    manualOverridePassword = null;
+    sessionStorage.removeItem('manualOverridePassword');
+
+    // Apply locked state
+    applyManualOverrideLockedState();
+
+    utils.showNotification('Manuální ovládání zamčeno - přepnuto na automatický režim', 'info');
+}
+
+/**
+ * Apply unlocked state to manual override section
+ */
+function applyManualOverrideUnlockedState() {
+    // Enable controls
+    document.getElementById('manual-override').disabled = false;
+    document.getElementById('toggle-heating-btn').disabled = false;
+    document.getElementById('toggle-pump-btn').disabled = false;
+
+    // Update UI to show unlocked state
+    const section = document.getElementById('manual-override-section');
+    section.classList.add('unlocked');
+    section.querySelector('h3').innerHTML = '🔓 Manuální ovládání <button id="manual-lock-btn" class="btn btn-warning btn-sm btn-lock-text">Zamknout</button>';
+
+    // Hide password input, show lock button
+    section.querySelector('.super-admin-auth').style.display = 'none';
+
+    // Attach lock button handler
+    const lockBtn = document.getElementById('manual-lock-btn');
+    if (lockBtn) {
+        lockBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            lockManualOverride();
+        });
+    }
+}
+
+/**
+ * Apply locked state to manual override section
+ */
+function applyManualOverrideLockedState() {
+    // Disable controls
+    const manualOverrideCheckbox = document.getElementById('manual-override');
+    manualOverrideCheckbox.disabled = true;
+    manualOverrideCheckbox.checked = false;
+
+    document.getElementById('toggle-heating-btn').disabled = true;
+    document.getElementById('toggle-pump-btn').disabled = true;
+
+    // Hide manual controls
+    document.getElementById('manual-controls').style.display = 'none';
+
+    // Update UI to show locked state
+    const section = document.getElementById('manual-override-section');
+    section.classList.remove('unlocked');
+    section.querySelector('h3').innerHTML = '🔒 Manuální ovládání';
+
+    // Show password input
+    section.querySelector('.super-admin-auth').style.display = 'block';
+}
+
+/**
+ * Unlock database section with super admin password
+ */
+async function unlockDatabase() {
+    const passwordInput = document.getElementById('db-super-admin-password');
+    const password = passwordInput.value;
+
+    if (!password) {
+        utils.showNotification('Zadejte super admin heslo', 'error');
+        return;
+    }
+
+    // Store password in session storage and memory
+    databasePassword = password;
+    sessionStorage.setItem('databasePassword', password);
+
+    // Apply unlocked state
+    applyDatabaseUnlockedState();
+
+    // Clear password field (for security)
+    passwordInput.value = '';
+
+    utils.showNotification('Správa databáze odemčena', 'success');
+}
+
+/**
+ * Lock database section
+ */
+function lockDatabase() {
+    // Clear password from storage and memory
+    databasePassword = null;
+    sessionStorage.removeItem('databasePassword');
+
+    // Apply locked state
+    applyDatabaseLockedState();
+
+    utils.showNotification('Správa databáze zamčena', 'info');
+}
+
+/**
+ * Apply unlocked state to database section
+ */
+function applyDatabaseUnlockedState() {
+    // Enable delete button
+    document.getElementById('delete-database-btn').disabled = false;
+
+    // Update UI to show unlocked state
+    const section = document.getElementById('database-section');
+    section.classList.add('unlocked');
+    section.querySelector('h3').innerHTML = '🔓 Správa databáze <button id="db-lock-btn" class="btn btn-warning btn-sm btn-lock-text">Zamknout</button>';
+
+    // Hide password input
+    section.querySelector('.super-admin-auth').style.display = 'none';
+
+    // Attach lock button handler
+    const lockBtn = document.getElementById('db-lock-btn');
+    if (lockBtn) {
+        lockBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            lockDatabase();
+        });
+    }
+}
+
+/**
+ * Apply locked state to database section
+ */
+function applyDatabaseLockedState() {
+    // Disable delete button
+    document.getElementById('delete-database-btn').disabled = true;
+
+    // Update UI to show locked state
+    const section = document.getElementById('database-section');
+    section.classList.remove('unlocked');
+    section.querySelector('h3').innerHTML = '🔒 Správa databáze';
+
+    // Show password input
+    section.querySelector('.super-admin-auth').style.display = 'block';
+}
+
+/**
  * Load current settings
  */
 async function loadSettings() {
@@ -93,6 +287,15 @@ async function loadSettings() {
         utils.updateElement('relay-heating', response.relay_heating || 1);
         utils.updateElement('relay-pump', response.relay_pump || 2);
         utils.updateElement('sensor-count', response.sensor_count || '--');
+
+        // Restore super admin unlocked state from session storage
+        if (manualOverridePassword) {
+            applyManualOverrideUnlockedState();
+        }
+
+        if (databasePassword) {
+            applyDatabaseUnlockedState();
+        }
 
     } catch (error) {
         console.error('Error loading settings:', error);
@@ -185,6 +388,13 @@ async function toggleManualOverride() {
     const manualOverride = document.getElementById('manual-override');
     const manualControls = document.getElementById('manual-controls');
 
+    // Check if section is unlocked
+    if (!manualOverridePassword) {
+        manualOverride.checked = false;
+        utils.showNotification('Nejprve odemkněte sekci super admin heslem', 'error');
+        return;
+    }
+
     if (manualOverride.checked) {
         const confirmed = confirm(
             'Varování: Aktivace manuálního režimu deaktivuje automatické řízení. ' +
@@ -246,10 +456,17 @@ async function saveManualState() {
     const heatingBtn = document.getElementById('toggle-heating-btn');
     const pumpBtn = document.getElementById('toggle-pump-btn');
 
+    // Check if we have the super admin password
+    if (!manualOverridePassword) {
+        utils.showNotification('Chyba autentizace super admina', 'error');
+        return;
+    }
+
     const formData = {
         manual_override: manualOverride,
         manual_heating: heatingBtn.getAttribute('data-state') === 'on',
-        manual_pump: pumpBtn.getAttribute('data-state') === 'on'
+        manual_pump: pumpBtn.getAttribute('data-state') === 'on',
+        super_admin_password: manualOverridePassword
     };
 
     try {
@@ -257,7 +474,15 @@ async function saveManualState() {
         console.log('Manual state updated:', formData);
     } catch (error) {
         console.error('Error saving manual state:', error);
-        utils.showNotification('Chyba při ukládání nastavení', 'error');
+
+        // Check if it's an authentication error
+        if (error.message && error.message.includes('password')) {
+            utils.showNotification('Neplatné super admin heslo - zamykám sekci', 'error');
+            // Lock the section due to invalid password
+            lockManualOverride();
+        } else {
+            utils.showNotification('Chyba při ukládání nastavení', 'error');
+        }
     }
 }
 
@@ -287,6 +512,12 @@ async function loadDatabaseStats() {
  * Delete all database data
  */
 async function deleteDatabase() {
+    // Check if we have the super admin password
+    if (!databasePassword) {
+        utils.showNotification('Nejprve odemkněte sekci super admin heslem', 'error');
+        return;
+    }
+
     // First confirmation
     const confirmed1 = confirm(
         'VAROVÁNÍ: Tato akce smaže všechna historická data z databáze!\n\n' +
@@ -314,7 +545,9 @@ async function deleteDatabase() {
     }
 
     try {
-        const response = await utils.apiCall('/api/database/delete', 'POST');
+        const response = await utils.apiCall('/api/database/delete', 'POST', {
+            super_admin_password: databasePassword
+        });
 
         if (response.success) {
             utils.showNotification(
@@ -330,7 +563,15 @@ async function deleteDatabase() {
         }
     } catch (error) {
         console.error('Error deleting database:', error);
-        utils.showNotification('Chyba při mazání databáze: ' + error.message, 'error');
+
+        // Check if it's an authentication error
+        if (error.message && error.message.includes('password')) {
+            utils.showNotification('Neplatné super admin heslo - zamykám sekci', 'error');
+            // Lock the section due to invalid password
+            lockDatabase();
+        } else {
+            utils.showNotification('Chyba při mazání databáze: ' + error.message, 'error');
+        }
     }
 }
 
@@ -386,6 +627,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteDatabaseBtn = document.getElementById('delete-database-btn');
     if (deleteDatabaseBtn) {
         deleteDatabaseBtn.addEventListener('click', deleteDatabase);
+    }
+
+    // Unlock buttons
+    const manualUnlockBtn = document.getElementById('manual-unlock-btn');
+    if (manualUnlockBtn) {
+        manualUnlockBtn.addEventListener('click', unlockManualOverride);
+    }
+
+    const dbUnlockBtn = document.getElementById('db-unlock-btn');
+    if (dbUnlockBtn) {
+        dbUnlockBtn.addEventListener('click', unlockDatabase);
+    }
+
+    // Allow Enter key to submit passwords
+    const manualPasswordInput = document.getElementById('manual-super-admin-password');
+    if (manualPasswordInput) {
+        manualPasswordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                unlockManualOverride();
+            }
+        });
+    }
+
+    const dbPasswordInput = document.getElementById('db-super-admin-password');
+    if (dbPasswordInput) {
+        dbPasswordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                unlockDatabase();
+            }
+        });
     }
 
     // Refresh status periodically

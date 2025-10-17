@@ -70,6 +70,7 @@ http://localhost:5000
 **Default credentials:**
 - Username: `admin`
 - Password: `admin123`
+- Super Admin Password: `superadmin123` (for manual override & database deletion)
 
 > **Important:** Change these credentials in production!
 
@@ -101,20 +102,28 @@ beatrice-ttcs-flask/
 ├── control.py             # Temperature control logic
 ├── evok_client.py         # Real Evok API client
 ├── evok_mock.py           # Mock Evok client for testing
-├── auth.py                # Authentication
+├── auth.py                # Authentication (basic + super admin)
+├── database.py            # SQLite database management
 ├── requirements.txt       # Python dependencies
 ├── run_dev.sh            # Development run script
 ├── .env.example          # Environment variables template
 ├── static/               # Frontend assets
-│   ├── css/
-│   ├── js/
-│   └── img/
-├── templates/            # HTML templates
-│   ├── base.html
-│   ├── login.html
-│   ├── dashboard.html
-│   └── settings.html
-└── logs/                 # Application logs
+│   ├── css/              # Stylesheets
+│   ├── js/               # JavaScript files
+│   └── img/              # Images
+├── templates/            # HTML templates (Czech language)
+│   ├── base.html         # Base template with navigation
+│   ├── login.html        # Login page
+│   ├── dashboard.html    # Main dashboard
+│   ├── settings.html     # Settings page
+│   └── history.html      # Historical data page
+├── logs/                 # Application logs
+├── deployment/           # Deployment files
+│   ├── install.sh
+│   ├── water-tank-control.service
+│   ├── nginx-water-tank.conf
+│   └── DEPLOYMENT.md
+└── doc/                  # Additional documentation
 ```
 
 ## Development Workflow
@@ -145,6 +154,10 @@ Refresh browser to see changes.
 - Test API endpoints using browser dev tools
 - Check WebSocket communication
 - Review logs in `logs/app.log`
+- Test authentication and authorization:
+  - Basic login/logout
+  - Super admin protected features (manual override, database deletion)
+  - Invalid password handling
 
 ## API Endpoints
 
@@ -185,11 +198,19 @@ POST /api/settings/system
   "sensor_timeout": 30
 }
 
-# Manual override
+# Manual override (requires super admin password)
 POST /api/settings/manual
 {
   "manual_override": true,
-  "manual_heating": false
+  "manual_heating": false,
+  "manual_pump": false,
+  "super_admin_password": "superadmin123"
+}
+
+# Delete database (requires super admin password)
+POST /api/database/delete
+{
+  "super_admin_password": "superadmin123"
 }
 ```
 
@@ -237,12 +258,26 @@ Settings are persisted in `config.json`:
 }
 ```
 
+### Environment Configuration (.env)
+
+Create `.env` file from template:
+```bash
+cp .env.example .env
+```
+
+Configure:
+- `FLASK_DEBUG` - Enable debug mode
+- `SECRET_KEY` - Flask session secret
+- `EVOK_HOST` / `EVOK_PORT` - Evok API connection
+- `USE_MOCK_EVOK` - Use mock hardware for testing
+- `SUPER_ADMIN_PASSWORD` - Password for sensitive operations
+
 ### Flask Configuration
 
 Edit `config.py` to modify:
-- Secret key
+- Secret key defaults
 - Session settings
-- Evok API endpoints
+- Evok API endpoint formats
 
 ## Logging
 

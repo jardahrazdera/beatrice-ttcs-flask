@@ -16,7 +16,7 @@
                 <li><a href="{{ url_for('index') }}" class="nav-link">Dashboard</a></li>
                 <li><a href="{{ url_for('history') }}" class="nav-link">Historie</a></li>
                 <li><a href="{{ url_for('settings') }}" class="nav-link">Nastavení</a></li>
-                <li><a href="{{ url_for('logout') }}" class="nav-link">Odhlásit</a></li>
+                <li><a href="{{ url_for('logout') }}" class="nav-link" onclick="return handleLogout();">Odhlásit</a></li>
             </ul>
         </div>
     </nav>

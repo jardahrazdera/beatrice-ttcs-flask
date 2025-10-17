@@ -46,7 +46,7 @@ function removeClass(id, className) {
 function showNotification(message, type = 'info') {
     // Create notification element
     const notification = document.createElement('div');
-    notification.className = `alert alert-${type}`;
+    notification.className = `alert alert-${type} notification-toast`;
     notification.textContent = message;
     notification.style.position = 'fixed';
     notification.style.top = '20px';
@@ -56,9 +56,14 @@ function showNotification(message, type = 'info') {
 
     document.body.appendChild(notification);
 
-    // Auto-remove after 5 seconds
+    // Auto-remove after 5 seconds with fade out
     setTimeout(() => {
-        notification.remove();
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(400px)';
+        notification.style.transition = 'all 0.3s ease-out';
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
     }, 5000);
 }
 
@@ -89,6 +94,35 @@ async function apiCall(url, method = 'GET', data = null) {
     }
 }
 
+/**
+ * Handle logout - disable manual mode before logging out
+ */
+async function handleLogout() {
+    // Check if manual override password exists (section is unlocked)
+    const manualPassword = sessionStorage.getItem('manualOverridePassword');
+
+    if (manualPassword) {
+        try {
+            // Disable manual mode before logout
+            await apiCall('/api/settings/manual', 'POST', {
+                manual_override: false,
+                manual_heating: false,
+                manual_pump: false,
+                super_admin_password: manualPassword
+            });
+        } catch (error) {
+            console.error('Error disabling manual mode on logout:', error);
+            // Continue with logout even if this fails
+        }
+    }
+
+    // Clear all session storage
+    sessionStorage.clear();
+
+    // Allow navigation to logout
+    return true;
+}
+
 // Export utilities for use in other files
 window.utils = {
     formatTemperature,
@@ -99,3 +133,6 @@ window.utils = {
     showNotification,
     apiCall
 };
+
+// Export handleLogout globally
+window.handleLogout = handleLogout;

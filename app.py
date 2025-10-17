@@ -17,7 +17,7 @@ import time
 from config import Config, SystemConfig
 from control import TemperatureController
 from evok_mock import create_evok_client
-from auth import check_auth, requires_auth
+from auth import check_auth, requires_auth, requires_super_admin
 from database import Database
 
 # Initialize Flask application
@@ -78,7 +78,16 @@ def login():
 
 @app.route('/logout')
 def logout():
-    """Logout handler."""
+    """Logout handler - also disables manual override for safety."""
+    # Disable manual override when user logs out (safety feature)
+    if system_config.get('manual_override', False):
+        system_config.update({
+            'manual_override': False,
+            'manual_heating': False,
+            'manual_pump': False
+        })
+        app.logger.warning('Manual override disabled on logout (safety)')
+
     session.pop('authenticated', None)
     return redirect(url_for('login'))
 
@@ -245,8 +254,9 @@ def save_system_settings():
 
 @app.route('/api/settings/manual', methods=['POST'])
 @requires_auth
+@requires_super_admin
 def save_manual_override():
-    """API endpoint to save manual override settings."""
+    """API endpoint to save manual override settings. Requires super admin password."""
     try:
         data = request.get_json()
 
@@ -260,7 +270,7 @@ def save_manual_override():
             'manual_pump': manual_pump
         })
 
-        app.logger.warning(f'Manual override {"enabled" if manual_override else "disabled"}')
+        app.logger.warning(f'Manual override {"enabled" if manual_override else "disabled"} by super admin')
         if manual_override:
             app.logger.info(f'Manual controls: heating={manual_heating}, pump={manual_pump}')
         return jsonify({'success': True, 'message': 'Manual override updated'})
@@ -366,12 +376,13 @@ def get_database_stats():
 
 @app.route('/api/database/delete', methods=['POST'])
 @requires_auth
+@requires_super_admin
 def delete_database():
-    """API endpoint to delete all database data."""
+    """API endpoint to delete all database data. Requires super admin password."""
     try:
         deleted = db.delete_all_data()
 
-        app.logger.warning('Database cleared via API request')
+        app.logger.warning('Database cleared via API request by super admin')
         return jsonify({
             'success': True,
             'deleted': deleted,

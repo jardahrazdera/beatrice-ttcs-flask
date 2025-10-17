@@ -79,28 +79,47 @@
         </div>
 
         <!-- Manual Override -->
-        <div class="card">
-            <h3>Manuální ovládání</h3>
+        <div class="card locked-section" id="manual-override-section">
+            <h3>🔒 Manuální ovládání</h3>
             <div class="alert alert-danger">
                 <strong>Varování:</strong> Manuální režim deaktivuje automatické řízení!
             </div>
 
+            <div class="super-admin-auth">
+                <div class="form-group">
+                    <label for="manual-super-admin-password">Super admin heslo</label>
+                    <div class="password-input-group">
+                        <input type="password"
+                               id="manual-super-admin-password"
+                               class="form-control"
+                               placeholder="Zadejte super admin heslo"
+                               autocomplete="off">
+                        <button type="button"
+                                id="manual-unlock-btn"
+                                class="btn btn-secondary btn-sm">
+                            Odemknout
+                        </button>
+                    </div>
+                    <small>Požadováno pro přístup k manuálnímu ovládání</small>
+                </div>
+            </div>
+
             <div class="form-group">
                 <label class="checkbox-label">
-                    <input type="checkbox" id="manual-override" name="manual_override">
+                    <input type="checkbox" id="manual-override" name="manual_override" disabled>
                     Povolit manuální režim
                 </label>
             </div>
 
             <div id="manual-controls" class="manual-controls" style="display: none;">
                 <div class="control-buttons">
-                    <button id="toggle-heating-btn" class="btn btn-control" data-state="off">
+                    <button id="toggle-heating-btn" class="btn btn-control" data-state="off" disabled>
                         <span class="control-icon">🔥</span>
                         <span class="control-label">Topení</span>
                         <span class="control-status">VYPNUTO</span>
                     </button>
 
-                    <button id="toggle-pump-btn" class="btn btn-control" data-state="off">
+                    <button id="toggle-pump-btn" class="btn btn-control" data-state="off" disabled>
                         <span class="control-icon">💧</span>
                         <span class="control-label">Čerpadlo</span>
                         <span class="control-status">VYPNUTO</span>
@@ -148,8 +167,8 @@
         </div>
 
         <!-- Database Management -->
-        <div class="card">
-            <h3>Správa databáze</h3>
+        <div class="card locked-section" id="database-section">
+            <h3>🔒 Správa databáze</h3>
             <div class="alert alert-danger">
                 <strong>Varování:</strong> Smazání databáze je nevratné!
             </div>
@@ -165,8 +184,27 @@
                 </div>
             </div>
 
+            <div class="super-admin-auth">
+                <div class="form-group">
+                    <label for="db-super-admin-password">Super admin heslo</label>
+                    <div class="password-input-group">
+                        <input type="password"
+                               id="db-super-admin-password"
+                               class="form-control"
+                               placeholder="Zadejte super admin heslo"
+                               autocomplete="off">
+                        <button type="button"
+                                id="db-unlock-btn"
+                                class="btn btn-secondary btn-sm">
+                            Odemknout
+                        </button>
+                    </div>
+                    <small>Požadováno pro smazání databáze</small>
+                </div>
+            </div>
+
             <div class="form-group">
-                <button id="delete-database-btn" class="btn btn-danger btn-block">
+                <button id="delete-database-btn" class="btn btn-danger btn-block" disabled>
                     Smazat všechna data z databáze
                 </button>
             </div>

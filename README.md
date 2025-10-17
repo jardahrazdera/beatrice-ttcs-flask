@@ -10,10 +10,12 @@ This system monitors and controls water temperature in three interconnected stor
 
 - **Real-time Temperature Monitoring**: Individual monitoring of three tanks via DS18B20 1-wire sensors
 - **Intelligent Control**: Hysteresis-based temperature control with average temperature calculation
-- **Web Interface**: Responsive web UI for monitoring and configuration
+- **Web Interface**: Responsive web UI for monitoring and configuration (Czech language)
 - **Safety Features**: Over-temperature protection, sensor failure detection, and manual override
-- **Historical Data**: Temperature graphs and logging for system analysis
+- **Historical Data**: Temperature graphs, statistics, and event logging for system analysis
 - **Automatic Circulation**: Smart pump control to prevent heating unit overheating
+- **Secure Authentication**: Multi-level access control with super admin protection for sensitive operations
+- **Database Management**: Temperature history, events, and control action logging
 
 ## Hardware Requirements
 
@@ -61,8 +63,24 @@ python app.py
 Access the web interface at `http://<raspberry-pi-ip>:5000` to configure:
 - Target temperature setpoint
 - Temperature hysteresis (upper/lower bounds)
-- Manual override controls
+- Pump delay settings
+- System update intervals
+- Manual override controls (requires super admin password)
 - View real-time monitoring data
+- Access historical temperature graphs and statistics
+
+### Authentication
+
+**Default credentials:**
+- Username: `admin`
+- Password: `admin123`
+
+**Super admin password** (for sensitive operations):
+- Default: `superadmin123`
+- Configure via `SUPER_ADMIN_PASSWORD` environment variable
+- Required for: Manual override, Database deletion
+
+**⚠️ IMPORTANT**: Change all default passwords in production!
 
 ## Deployment
 
@@ -72,21 +90,27 @@ Deploy as a systemd service for automatic startup on boot. See deployment docume
 
 ```
 /
-├── app.py                 # Main application
+├── app.py                 # Main Flask application
 ├── config.py              # Configuration management
 ├── control.py             # Temperature control logic
-├── evok_client.py         # Evok API client
-├── auth.py                # Authentication handler
+├── evok_client.py         # Real Evok API client
+├── evok_mock.py           # Mock client for development
+├── auth.py                # Authentication (basic + super admin)
+├── database.py            # SQLite database management
 ├── static/                # CSS, JS, images
-├── templates/             # HTML templates
-└── logs/                  # Application logs
+├── templates/             # HTML templates (Czech language)
+├── logs/                  # Application logs
+├── deployment/            # Deployment scripts and configs
+└── doc/                   # Additional documentation
 ```
 
 ## Safety
 
-- Circulation pump is automatically controlled and should not be manually overridden to prevent heating unit damage
-- Over-temperature protection is built into the control logic
-- Sensor failure detection with safe fallback behavior
+- **Protected Manual Override**: Manual control of heating and pump requires super admin authentication to prevent accidental misuse
+- **Circulation Pump Protection**: Pump is automatically controlled to prevent heating unit overheating
+- **Over-temperature Protection**: Built-in safety limits with automatic shutdown
+- **Sensor Failure Detection**: Safe fallback behavior when sensors fail
+- **Database Backup**: All operations logged; database deletion requires super admin password
 
 ## License
 

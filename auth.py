@@ -15,6 +15,14 @@ from flask import session, redirect, url_for, request
 DEFAULT_USERNAME = 'admin'
 DEFAULT_PASSWORD_HASH = hashlib.sha256('admin123'.encode()).hexdigest()
 
+# Super admin password for sensitive operations
+# Set via environment variable: SUPER_ADMIN_PASSWORD
+# Default: 'superadmin123' (CHANGE IN PRODUCTION!)
+SUPER_ADMIN_PASSWORD_HASH = os.environ.get(
+    'SUPER_ADMIN_PASSWORD_HASH',
+    hashlib.sha256(os.environ.get('SUPER_ADMIN_PASSWORD', 'superadmin123').encode()).hexdigest()
+)
+
 # In production, store credentials in environment variables or secure config
 CREDENTIALS = {
     DEFAULT_USERNAME: DEFAULT_PASSWORD_HASH
@@ -105,3 +113,50 @@ def change_password(username: str, old_password: str, new_password: str) -> bool
 
     CREDENTIALS[username] = hash_password(new_password)
     return True
+
+
+def check_super_admin_auth(password: str) -> bool:
+    """
+    Verify super admin password for sensitive operations.
+
+    Args:
+        password: Plain text super admin password
+
+    Returns:
+        True if password is valid, False otherwise
+    """
+    if not password:
+        return False
+
+    password_hash = hash_password(password)
+    return password_hash == SUPER_ADMIN_PASSWORD_HASH
+
+
+def requires_super_admin(f):
+    """
+    Decorator for routes that require super admin authentication.
+    Expects 'super_admin_password' in request JSON body.
+
+    Usage:
+        @app.route('/protected')
+        @requires_auth
+        @requires_super_admin
+        def protected_route():
+            return 'Protected content'
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        # Check if user is authenticated first
+        if not session.get('authenticated'):
+            return {'error': 'Authentication required'}, 401
+
+        # Check super admin password
+        data = request.get_json()
+        if not data or not data.get('super_admin_password'):
+            return {'error': 'Super admin password required'}, 403
+
+        if not check_super_admin_auth(data.get('super_admin_password')):
+            return {'error': 'Invalid super admin password'}, 403
+
+        return f(*args, **kwargs)
+    return decorated

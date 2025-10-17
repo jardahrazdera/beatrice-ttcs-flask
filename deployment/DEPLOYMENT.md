@@ -259,6 +259,59 @@ Currently, passwords are hardcoded in `auth.py`. To change:
    sudo systemctl restart water-tank-control
    ```
 
+### Super Admin Password
+
+**NEW**: Sensitive operations (manual override and database deletion) require super admin authentication.
+
+#### Setting Super Admin Password
+
+The super admin password is set via environment variable for additional security:
+
+1. **Edit environment file**:
+   ```bash
+   nano /opt/water-tank-control/.env
+   ```
+
+2. **Add super admin password**:
+   ```bash
+   # Super Admin Password (for sensitive operations)
+   SUPER_ADMIN_PASSWORD=your-secure-super-admin-password
+
+   # Or provide pre-hashed password (SHA-256):
+   # SUPER_ADMIN_PASSWORD_HASH=<sha256-hash>
+   ```
+
+3. **Restart service**:
+   ```bash
+   sudo systemctl restart water-tank-control
+   ```
+
+#### Default Super Admin Password
+
+**Development default**: `superadmin123`
+
+**CRITICAL**: Change this in production immediately!
+
+#### Generating Password Hash
+
+For added security, you can provide a pre-hashed password:
+
+```bash
+# Generate SHA-256 hash
+python3 -c "import hashlib; print(hashlib.sha256('your-password'.encode()).hexdigest())"
+
+# Add to .env file as:
+SUPER_ADMIN_PASSWORD_HASH=<generated-hash>
+```
+
+#### Protected Features
+
+Super admin password is required for:
+- **Manual Override**: Enabling/disabling manual control of heating and pump
+- **Database Deletion**: Erasing all historical data
+
+These features are locked with a 🔒 icon in the web interface and require the super admin password to unlock.
+
 ### Firewall Configuration
 
 If using firewall, allow appropriate ports:
