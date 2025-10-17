@@ -296,9 +296,8 @@ function updateCurrentTime() {
 
     if (dateElement) {
         dateElement.textContent = now.toLocaleDateString('cs-CZ', {
-            weekday: 'long',
             year: 'numeric',
-            month: 'long',
+            month: 'numeric',
             day: 'numeric'
         });
     }
