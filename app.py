@@ -506,10 +506,10 @@ def shutdown_system():
 # Register shutdown handler
 atexit.register(shutdown_system)
 
+# Initialize system at module level (works with both gunicorn and direct run)
+initialize_system()
+
 
 if __name__ == '__main__':
-    # Initialize system before starting server
-    initialize_system()
-
-    # Run Flask-SocketIO server
+    # Run Flask-SocketIO server for development
     socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)
