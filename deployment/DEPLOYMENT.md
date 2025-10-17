@@ -45,7 +45,7 @@ This guide explains how to deploy the Hot Water Tank Control System to a Raspber
    - Set up Python virtual environment
    - Install Python dependencies
    - Generate secure secret key
-   - Install systemd service
+   - Install systemd service (automatically configured for current user)
    - Optionally start the service
 
 4. **Access Web Interface**
@@ -93,11 +93,17 @@ This guide explains how to deploy the Hot Water Tank Control System to a Raspber
 
 6. **Install Systemd Service**
    ```bash
-   sudo cp deployment/water-tank-control.service /etc/systemd/system/
+   # Update service file with current user and install
+   sed "s/User=pi/User=$USER/" deployment/water-tank-control.service | \
+   sed "s/Group=pi/Group=$(id -gn)/" | \
+   sudo tee /etc/systemd/system/water-tank-control.service > /dev/null
+
    sudo systemctl daemon-reload
    sudo systemctl enable water-tank-control
    sudo systemctl start water-tank-control
    ```
+
+   **Note:** The service file template uses `User=pi` by default. The commands above automatically replace it with your current username to prevent user mismatch errors.
 
 ## Configuration
 
@@ -504,12 +510,29 @@ sudo systemctl restart water-tank-control
    sudo journalctl -u water-tank-control -n 100
    ```
 
-2. Check Evok status:
+2. **Check for user mismatch error (exit code 217/USER)**:
+
+   If you see `Main process exited, code=exited, status=217/USER`:
+   ```bash
+   # Check current user
+   whoami
+
+   # Edit service file and update User and Group
+   sudo nano /etc/systemd/system/water-tank-control.service
+   # Change User=pi to User=your-username
+   # Change Group=pi to Group=your-username
+
+   # Reload and restart
+   sudo systemctl daemon-reload
+   sudo systemctl restart water-tank-control
+   ```
+
+3. Check Evok status:
    ```bash
    sudo systemctl status evok
    ```
 
-3. Test manually:
+4. Test manually:
    ```bash
    cd /opt/water-tank-control
    source venv/bin/activate

@@ -5,6 +5,8 @@ Wants=evok.service
 
 [Service]
 Type=simple
+# User and Group are automatically set by install.sh to match the installing user
+# If installing manually, change these to match your system user
 User=pi
 Group=pi
 WorkingDirectory=/opt/water-tank-control

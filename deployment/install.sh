@@ -124,8 +124,12 @@ echo ""
 
 # Install systemd service
 echo "Installing systemd service..."
-sudo cp deployment/water-tank-control.service /etc/systemd/system/
+# Update service file with current user
+sed "s/User=pi/User=$USER/" deployment/water-tank-control.service | \
+sed "s/Group=pi/Group=$(id -gn)/" | \
+sudo tee /etc/systemd/system/water-tank-control.service > /dev/null
 sudo systemctl daemon-reload
+echo "✓ Service configured for user: $USER (group: $(id -gn))"
 echo ""
 
 # Ask about nginx installation
