@@ -141,26 +141,100 @@ if [[ $INSTALL_NGINX =~ ^[Yy]$ ]]; then
     echo "Installing nginx..."
     sudo apt-get install -y nginx
 
-    echo "Configuring nginx..."
-    sudo cp $INSTALL_DIR/deployment/nginx-water-tank.conf /etc/nginx/sites-available/water-tank-control
-
-    # Remove default site
-    sudo rm -f /etc/nginx/sites-enabled/default
-
-    # Enable water tank control site
-    sudo ln -sf /etc/nginx/sites-available/water-tank-control /etc/nginx/sites-enabled/
-
-    # Test nginx configuration
-    if sudo nginx -t; then
-        echo "✓ Nginx configuration valid"
-        sudo systemctl enable nginx
-        sudo systemctl restart nginx
-        echo "✓ Nginx started"
-    else
-        echo "ERROR: Nginx configuration test failed"
-        echo "Please check the configuration manually"
-    fi
+    # Check for conflicting nginx configurations
     echo ""
+    echo "Checking for conflicting nginx configurations..."
+    CONFLICTS_FOUND=false
+
+    # Check for duplicate default_server directives
+    if sudo grep -r "default_server" /etc/nginx/sites-enabled/ 2>/dev/null | grep -v "water-tank-control" > /dev/null; then
+        echo "⚠ WARNING: Found existing default_server configuration(s):"
+        sudo grep -r "default_server" /etc/nginx/sites-enabled/ 2>/dev/null | grep -v "water-tank-control" | cut -d: -f1 | sort -u
+        CONFLICTS_FOUND=true
+    fi
+
+    # Check for evok-web package
+    if dpkg -l | grep -q "evok-web"; then
+        echo "⚠ WARNING: evok-web package is installed (may conflict with port 80)"
+        CONFLICTS_FOUND=true
+    fi
+
+    if [ "$CONFLICTS_FOUND" = true ]; then
+        echo ""
+        echo "Conflicts detected. Options:"
+        echo "  1) Remove conflicting configurations automatically (Recommended)"
+        echo "  2) Skip nginx installation (configure manually later)"
+        echo "  3) Continue anyway (may cause nginx errors)"
+        read -p "Choose option (1/2/3): " -n 1 -r
+        echo
+
+        case $REPLY in
+            1)
+                echo "Removing conflicting configurations..."
+                # Remove evok-web if installed
+                if dpkg -l | grep -q "evok-web"; then
+                    echo "Uninstalling evok-web package..."
+                    sudo apt-get remove -y evok-web
+                    echo "✓ evok-web removed"
+                fi
+                # Remove conflicting default_server sites
+                for site in $(sudo grep -r "default_server" /etc/nginx/sites-enabled/ 2>/dev/null | grep -v "water-tank-control" | cut -d: -f1 | sort -u); do
+                    echo "Disabling: $site"
+                    sudo rm -f "$site"
+                done
+                echo "✓ Conflicts resolved"
+                ;;
+            2)
+                echo "Skipping nginx installation"
+                INSTALL_NGINX="N"
+                ;;
+            3)
+                echo "Continuing with existing configuration..."
+                ;;
+            *)
+                echo "Invalid option, skipping nginx installation"
+                INSTALL_NGINX="N"
+                ;;
+        esac
+        echo ""
+    fi
+
+    # Only proceed with nginx configuration if not skipped
+    if [[ $INSTALL_NGINX =~ ^[Yy]$ ]]; then
+        echo "Configuring nginx..."
+        sudo cp $INSTALL_DIR/deployment/nginx-water-tank.conf /etc/nginx/sites-available/water-tank-control
+
+        # Remove default site
+        sudo rm -f /etc/nginx/sites-enabled/default
+
+        # Enable water tank control site
+        sudo ln -sf /etc/nginx/sites-available/water-tank-control /etc/nginx/sites-enabled/
+
+        # Test nginx configuration
+        if sudo nginx -t 2>&1; then
+            echo "✓ Nginx configuration valid"
+            sudo systemctl enable nginx
+            sudo systemctl restart nginx
+            echo "✓ Nginx started"
+        else
+            echo "ERROR: Nginx configuration test failed"
+            echo ""
+            echo "This usually means there are still conflicting configurations."
+            echo "To diagnose:"
+            echo "  sudo nginx -t"
+            echo "  sudo grep -r 'default_server' /etc/nginx/sites-enabled/"
+            echo ""
+            read -p "Continue anyway? (y/N) " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                echo "Installation will continue without nginx restart"
+                echo "You can fix nginx manually later"
+            else
+                sudo systemctl restart nginx 2>&1 || true
+            fi
+        fi
+        echo ""
+    fi
 fi
 
 # Enable and start service
