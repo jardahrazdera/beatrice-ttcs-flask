@@ -1,6 +1,7 @@
 # Flask web framework
 Flask==3.0.0
 Flask-SocketIO==5.3.5
+Flask-WTF==1.2.1
 
 # WebSocket support
 python-socketio==5.10.0

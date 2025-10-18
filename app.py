@@ -7,6 +7,7 @@ for the temperature control system interface.
 
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for
 from flask_socketio import SocketIO, emit
+from flask_wtf.csrf import CSRFProtect
 import logging
 from logging.handlers import RotatingFileHandler
 import os
@@ -24,7 +25,10 @@ from database import Database
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Initialize SocketIO for real-time updates
+# Initialize CSRF protection
+csrf = CSRFProtect(app)
+
+# Initialize SocketIO for real-time updates (exempt from CSRF)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Setup logging
@@ -315,6 +319,43 @@ def get_average_history():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/history/average/range', methods=['GET'])
+@requires_auth
+def get_average_history_range():
+    """API endpoint for averaged temperature history with custom date range."""
+    try:
+        from datetime import datetime
+
+        date_from_str = request.args.get('from')
+        date_to_str = request.args.get('to')
+        interval = int(request.args.get('interval', 5))
+
+        if not date_from_str or not date_to_str:
+            return jsonify({'error': 'Missing from or to parameter'}), 400
+
+        # Parse datetime-local format (YYYY-MM-DDTHH:MM)
+        date_from = datetime.fromisoformat(date_from_str)
+        date_to = datetime.fromisoformat(date_to_str)
+
+        # Validate date range
+        if date_from >= date_to:
+            return jsonify({'error': 'Start date must be before end date'}), 400
+
+        history = db.get_average_temperature_history_range(
+            date_from=date_from,
+            date_to=date_to,
+            interval_minutes=interval
+        )
+        return jsonify({'success': True, 'data': history})
+
+    except ValueError as ve:
+        app.logger.error(f'Invalid date format: {ve}')
+        return jsonify({'error': 'Invalid date format. Use YYYY-MM-DDTHH:MM'}), 400
+    except Exception as e:
+        app.logger.error(f'Error getting average history by range: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/history/events', methods=['GET'])
 @requires_auth
 def get_events_history():
@@ -331,6 +372,43 @@ def get_events_history():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/history/events/range', methods=['GET'])
+@requires_auth
+def get_events_history_range():
+    """API endpoint for system events with custom date range."""
+    try:
+        from datetime import datetime
+
+        date_from_str = request.args.get('from')
+        date_to_str = request.args.get('to')
+        event_type = request.args.get('type')
+
+        if not date_from_str or not date_to_str:
+            return jsonify({'error': 'Missing from or to parameter'}), 400
+
+        # Parse datetime-local format (YYYY-MM-DDTHH:MM)
+        date_from = datetime.fromisoformat(date_from_str)
+        date_to = datetime.fromisoformat(date_to_str)
+
+        # Validate date range
+        if date_from >= date_to:
+            return jsonify({'error': 'Start date must be before end date'}), 400
+
+        events = db.get_events_range(
+            date_from=date_from,
+            date_to=date_to,
+            event_type=event_type if event_type else None
+        )
+        return jsonify({'success': True, 'data': events})
+
+    except ValueError as ve:
+        app.logger.error(f'Invalid date format: {ve}')
+        return jsonify({'error': 'Invalid date format. Use YYYY-MM-DDTHH:MM'}), 400
+    except Exception as e:
+        app.logger.error(f'Error getting events by range: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/history/control', methods=['GET'])
 @requires_auth
 def get_control_history():
@@ -343,6 +421,41 @@ def get_control_history():
 
     except Exception as e:
         app.logger.error(f'Error getting control history: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/history/control/range', methods=['GET'])
+@requires_auth
+def get_control_history_range():
+    """API endpoint for control action history with custom date range."""
+    try:
+        from datetime import datetime
+
+        date_from_str = request.args.get('from')
+        date_to_str = request.args.get('to')
+
+        if not date_from_str or not date_to_str:
+            return jsonify({'error': 'Missing from or to parameter'}), 400
+
+        # Parse datetime-local format (YYYY-MM-DDTHH:MM)
+        date_from = datetime.fromisoformat(date_from_str)
+        date_to = datetime.fromisoformat(date_to_str)
+
+        # Validate date range
+        if date_from >= date_to:
+            return jsonify({'error': 'Start date must be before end date'}), 400
+
+        history = db.get_control_history_range(
+            date_from=date_from,
+            date_to=date_to
+        )
+        return jsonify({'success': True, 'data': history})
+
+    except ValueError as ve:
+        app.logger.error(f'Invalid date format: {ve}')
+        return jsonify({'error': 'Invalid date format. Use YYYY-MM-DDTHH:MM'}), 400
+    except Exception as e:
+        app.logger.error(f'Error getting control history by range: {e}')
         return jsonify({'error': str(e)}), 500
 
 

@@ -5,22 +5,22 @@ This module provides basic authentication functionality including
 password hashing, session management, and login decorators.
 """
 
-import hashlib
 import os
 from functools import wraps
 from flask import session, redirect, url_for, request
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 # Default credentials (should be changed in production)
 DEFAULT_USERNAME = 'admin'
-DEFAULT_PASSWORD_HASH = hashlib.sha256('admin123'.encode()).hexdigest()
+DEFAULT_PASSWORD_HASH = generate_password_hash('admin123')
 
 # Super admin password for sensitive operations
-# Set via environment variable: SUPER_ADMIN_PASSWORD
+# Set via environment variable: SUPER_ADMIN_PASSWORD or SUPER_ADMIN_PASSWORD_HASH
 # Default: 'superadmin123' (CHANGE IN PRODUCTION!)
 SUPER_ADMIN_PASSWORD_HASH = os.environ.get(
     'SUPER_ADMIN_PASSWORD_HASH',
-    hashlib.sha256(os.environ.get('SUPER_ADMIN_PASSWORD', 'superadmin123').encode()).hexdigest()
+    generate_password_hash(os.environ.get('SUPER_ADMIN_PASSWORD', 'superadmin123'))
 )
 
 # In production, store credentials in environment variables or secure config
@@ -31,20 +31,20 @@ CREDENTIALS = {
 
 def hash_password(password: str) -> str:
     """
-    Hash password using SHA-256.
+    Hash password using bcrypt via werkzeug.security.
 
     Args:
         password: Plain text password
 
     Returns:
-        Hexadecimal hash string
+        Bcrypt password hash
     """
-    return hashlib.sha256(password.encode()).hexdigest()
+    return generate_password_hash(password)
 
 
 def check_auth(username: str, password: str) -> bool:
     """
-    Verify username and password.
+    Verify username and password using secure bcrypt comparison.
 
     Args:
         username: Username to check
@@ -56,8 +56,7 @@ def check_auth(username: str, password: str) -> bool:
     if username not in CREDENTIALS:
         return False
 
-    password_hash = hash_password(password)
-    return CREDENTIALS[username] == password_hash
+    return check_password_hash(CREDENTIALS[username], password)
 
 
 def requires_auth(f):
@@ -117,7 +116,7 @@ def change_password(username: str, old_password: str, new_password: str) -> bool
 
 def check_super_admin_auth(password: str) -> bool:
     """
-    Verify super admin password for sensitive operations.
+    Verify super admin password for sensitive operations using secure bcrypt comparison.
 
     Args:
         password: Plain text super admin password
@@ -128,8 +127,7 @@ def check_super_admin_auth(password: str) -> bool:
     if not password:
         return False
 
-    password_hash = hash_password(password)
-    return password_hash == SUPER_ADMIN_PASSWORD_HASH
+    return check_password_hash(SUPER_ADMIN_PASSWORD_HASH, password)
 
 
 def requires_super_admin(f):

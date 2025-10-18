@@ -6,6 +6,7 @@ user settings persistence, and environment-specific settings.
 """
 
 import os
+import sys
 import json
 from typing import Dict, Any
 
@@ -13,8 +14,33 @@ from typing import Dict, Any
 class Config:
     """Flask application configuration."""
 
-    # Flask settings
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
+    # Flask settings with validation
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+
+    # Validate SECRET_KEY in production
+    if not SECRET_KEY:
+        # Check if we're in development mode
+        is_dev = os.environ.get('USE_MOCK_EVOK', 'false').lower() == 'true' or \
+                 os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
+
+        if is_dev:
+            SECRET_KEY = 'dev-secret-key-change-in-production'
+            print("WARNING: Using default SECRET_KEY in development mode")
+        else:
+            print("CRITICAL: SECRET_KEY environment variable is not set in production!")
+            print("Set SECRET_KEY in .env file or environment variables")
+            sys.exit(1)
+    elif SECRET_KEY == 'dev-secret-key-change-in-production':
+        print("CRITICAL: SECRET_KEY is set to default value!")
+        print("Generate a secure key with: python -c 'import secrets; print(secrets.token_hex(32))'")
+        sys.exit(1)
+    elif len(SECRET_KEY) < 32:
+        print("CRITICAL: SECRET_KEY is too short (minimum 32 characters recommended)!")
+        sys.exit(1)
+
+    # CSRF Protection (Flask-WTF)
+    WTF_CSRF_ENABLED = True
+    WTF_CSRF_TIME_LIMIT = None  # CSRF tokens don't expire
 
     # Session settings
     SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS

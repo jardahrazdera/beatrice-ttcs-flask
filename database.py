@@ -299,6 +299,50 @@ class Database:
             self.logger.error(f"Error getting averaged temperature history: {e}")
             return []
 
+    def get_average_temperature_history_range(self, date_from: datetime, date_to: datetime,
+                                             interval_minutes: int = 5) -> List[Dict]:
+        """
+        Get average temperature history aggregated by time interval for custom date range.
+
+        Args:
+            date_from: Start datetime (CET/CEST timezone)
+            date_to: End datetime (CET/CEST timezone)
+            interval_minutes: Grouping interval in minutes
+
+        Returns:
+            List of averaged temperature readings with separate tank values
+        """
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+
+                # Convert CET/CEST to UTC for database query
+                cutoff_from = self._cet_to_utc(date_from)
+                cutoff_to = self._cet_to_utc(date_to)
+
+                cursor.execute(f'''
+                    SELECT
+                        datetime(
+                            (strftime('%s', timestamp) / ({interval_minutes} * 60)) * ({interval_minutes} * 60),
+                            'unixepoch'
+                        ) as timestamp,
+                        AVG(CASE WHEN tank_number = 1 THEN temperature END) as tank1,
+                        AVG(CASE WHEN tank_number = 2 THEN temperature END) as tank2,
+                        AVG(CASE WHEN tank_number = 3 THEN temperature END) as tank3,
+                        AVG(temperature) as average
+                    FROM temperature_readings
+                    WHERE timestamp >= ? AND timestamp <= ?
+                    GROUP BY timestamp
+                    ORDER BY timestamp ASC
+                ''', (cutoff_from, cutoff_to))
+
+                rows = cursor.fetchall()
+                return [dict(row) for row in rows]
+
+        except Exception as e:
+            self.logger.error(f"Error getting averaged temperature history by range: {e}")
+            return []
+
     def get_recent_events(self, limit: int = 100, event_type: Optional[str] = None) -> List[Dict]:
         """
         Get recent system events.
@@ -335,6 +379,47 @@ class Database:
             self.logger.error(f"Error getting events: {e}")
             return []
 
+    def get_events_range(self, date_from: datetime, date_to: datetime,
+                        event_type: Optional[str] = None) -> List[Dict]:
+        """
+        Get system events for custom date range.
+
+        Args:
+            date_from: Start datetime (CET/CEST timezone)
+            date_to: End datetime (CET/CEST timezone)
+            event_type: Filter by event type (None for all types)
+
+        Returns:
+            List of event dictionaries
+        """
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+
+                # Convert CET/CEST to UTC for database query
+                cutoff_from = self._cet_to_utc(date_from)
+                cutoff_to = self._cet_to_utc(date_to)
+
+                if event_type:
+                    cursor.execute('''
+                        SELECT * FROM system_events
+                        WHERE timestamp >= ? AND timestamp <= ? AND event_type = ?
+                        ORDER BY timestamp DESC
+                    ''', (cutoff_from, cutoff_to, event_type))
+                else:
+                    cursor.execute('''
+                        SELECT * FROM system_events
+                        WHERE timestamp >= ? AND timestamp <= ?
+                        ORDER BY timestamp DESC
+                    ''', (cutoff_from, cutoff_to))
+
+                rows = cursor.fetchall()
+                return [dict(row) for row in rows]
+
+        except Exception as e:
+            self.logger.error(f"Error getting events by range: {e}")
+            return []
+
     def get_control_history(self, hours: int = 24) -> List[Dict]:
         """
         Get control action history.
@@ -362,6 +447,38 @@ class Database:
 
         except Exception as e:
             self.logger.error(f"Error getting control history: {e}")
+            return []
+
+    def get_control_history_range(self, date_from: datetime, date_to: datetime) -> List[Dict]:
+        """
+        Get control action history for custom date range.
+
+        Args:
+            date_from: Start datetime (CET/CEST timezone)
+            date_to: End datetime (CET/CEST timezone)
+
+        Returns:
+            List of control action dictionaries
+        """
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+
+                # Convert CET/CEST to UTC for database query
+                cutoff_from = self._cet_to_utc(date_from)
+                cutoff_to = self._cet_to_utc(date_to)
+
+                cursor.execute('''
+                    SELECT * FROM control_actions
+                    WHERE timestamp >= ? AND timestamp <= ?
+                    ORDER BY timestamp DESC
+                ''', (cutoff_from, cutoff_to))
+
+                rows = cursor.fetchall()
+                return [dict(row) for row in rows]
+
+        except Exception as e:
+            self.logger.error(f"Error getting control history by range: {e}")
             return []
 
     def cleanup_old_data(self, days_to_keep: int = 30):
@@ -406,10 +523,13 @@ class Database:
 
             # Vacuum database outside transaction to reclaim space
             if temp_deleted > 0 or events_deleted > 0 or actions_deleted > 0:
-                conn = sqlite3.connect(self.db_path)
-                conn.execute('VACUUM')
-                conn.close()
-                self.logger.info("Database vacuumed successfully")
+                try:
+                    conn = sqlite3.connect(self.db_path)
+                    conn.execute('VACUUM')
+                    conn.close()
+                    self.logger.info("Database vacuumed successfully")
+                except Exception as vacuum_error:
+                    self.logger.error(f"Error vacuuming database: {vacuum_error}")
 
         except Exception as e:
             self.logger.error(f"Error cleaning up old data: {e}")
@@ -485,10 +605,13 @@ class Database:
                 )
 
             # Vacuum database to reclaim space
-            conn = sqlite3.connect(self.db_path)
-            conn.execute('VACUUM')
-            conn.close()
-            self.logger.info("Database vacuumed after deletion")
+            try:
+                conn = sqlite3.connect(self.db_path)
+                conn.execute('VACUUM')
+                conn.close()
+                self.logger.info("Database vacuumed after deletion")
+            except Exception as vacuum_error:
+                self.logger.error(f"Error vacuuming database after deletion: {vacuum_error}")
 
             return {
                 'temperature': temp_deleted,

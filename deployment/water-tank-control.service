@@ -10,8 +10,14 @@ Type=simple
 User=jarek
 Group=jarek
 WorkingDirectory=/opt/water-tank-control
+
+# Load environment variables from .env file
+EnvironmentFile=-/opt/water-tank-control/.env
+
+# Additional environment settings (can override .env)
 Environment="PATH=/opt/water-tank-control/venv/bin"
 Environment="USE_MOCK_EVOK=false"
+
 # Use gunicorn with eventlet worker for production (supports WebSocket)
 # For standalone mode (no nginx): --bind 0.0.0.0:5000
 # For nginx reverse proxy: --bind 127.0.0.1:5000
