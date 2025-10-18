@@ -21,20 +21,34 @@
 
             <!-- Date Range Selector -->
             <div class="form-group-inline">
-                <label for="temp-hours">Časové období:</label>
-                <select id="temp-hours" class="form-control">
-                    <option value="1">Poslední hodina</option>
-                    <option value="6">Posledních 6 hodin</option>
-                    <option value="12">Posledních 12 hodin</option>
-                    <option value="24" selected>Posledních 24 hodin</option>
-                    <option value="48">Poslední 2 dny</option>
-                    <option value="168">Poslední týden</option>
-                    <option value="720">Poslední měsíc</option>
-                    <option value="4320">Posledních 6 měsíců</option>
-                    <option value="8760">Poslední rok</option>
+                <label for="temp-range-type">Typ období:</label>
+                <select id="temp-range-type" class="form-control">
+                    <option value="relative" selected>Relativní</option>
+                    <option value="absolute">Vlastní rozsah</option>
                 </select>
 
-                <label for="temp-interval">Interval vzorkování:</label>
+                <div id="temp-relative-range" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <label for="temp-hours">Časové období:</label>
+                    <select id="temp-hours" class="form-control">
+                        <option value="1">Poslední hodina</option>
+                        <option value="6">Posledních 6 hodin</option>
+                        <option value="12">Posledních 12 hodin</option>
+                        <option value="24" selected>Posledních 24 hodin</option>
+                        <option value="48">Poslední 2 dny</option>
+                        <option value="168">Poslední týden</option>
+                        <option value="720">Poslední měsíc</option>
+                    </select>
+                </div>
+
+                <div id="temp-absolute-range" style="display: none; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <label for="temp-date-from">Od:</label>
+                    <input type="datetime-local" id="temp-date-from" class="form-control">
+
+                    <label for="temp-date-to">Do:</label>
+                    <input type="datetime-local" id="temp-date-to" class="form-control">
+                </div>
+
+                <label for="temp-interval">Interval:</label>
                 <select id="temp-interval" class="form-control">
                     <option value="1" selected>1 minuta</option>
                     <option value="5">5 minut</option>
@@ -85,7 +99,32 @@
 
             <!-- Event Filters -->
             <div class="form-group-inline">
-                <label for="event-type">Typ události:</label>
+                <label for="events-range-type">Typ období:</label>
+                <select id="events-range-type" class="form-control">
+                    <option value="relative" selected>Relativní</option>
+                    <option value="absolute">Vlastní rozsah</option>
+                </select>
+
+                <div id="events-relative-range" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <label for="events-hours">Časové období:</label>
+                    <select id="events-hours" class="form-control">
+                        <option value="6">Posledních 6 hodin</option>
+                        <option value="24" selected>Posledních 24 hodin</option>
+                        <option value="48">Poslední 2 dny</option>
+                        <option value="168">Poslední týden</option>
+                        <option value="720">Poslední měsíc</option>
+                    </select>
+                </div>
+
+                <div id="events-absolute-range" style="display: none; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <label for="events-date-from">Od:</label>
+                    <input type="datetime-local" id="events-date-from" class="form-control">
+
+                    <label for="events-date-to">Do:</label>
+                    <input type="datetime-local" id="events-date-to" class="form-control">
+                </div>
+
+                <label for="event-type">Typ:</label>
                 <select id="event-type" class="form-control">
                     <option value="">Všechny</option>
                     <option value="startup">Spuštění</option>
@@ -127,17 +166,31 @@
 
             <!-- Control Filters -->
             <div class="form-group-inline">
-                <label for="control-hours">Časové období:</label>
-                <select id="control-hours" class="form-control">
-                    <option value="6">Posledních 6 hodin</option>
-                    <option value="12">Posledních 12 hodin</option>
-                    <option value="24" selected>Posledních 24 hodin</option>
-                    <option value="48">Poslední 2 dny</option>
-                    <option value="168">Poslední týden</option>
-                    <option value="720">Poslední měsíc</option>
-                    <option value="4320">Posledních 6 měsíců</option>
-                    <option value="8760">Poslední rok</option>
+                <label for="control-range-type">Typ období:</label>
+                <select id="control-range-type" class="form-control">
+                    <option value="relative" selected>Relativní</option>
+                    <option value="absolute">Vlastní rozsah</option>
                 </select>
+
+                <div id="control-relative-range" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <label for="control-hours">Časové období:</label>
+                    <select id="control-hours" class="form-control">
+                        <option value="6">Posledních 6 hodin</option>
+                        <option value="12">Posledních 12 hodin</option>
+                        <option value="24" selected>Posledních 24 hodin</option>
+                        <option value="48">Poslední 2 dny</option>
+                        <option value="168">Poslední týden</option>
+                        <option value="720">Poslední měsíc</option>
+                    </select>
+                </div>
+
+                <div id="control-absolute-range" style="display: none; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <label for="control-date-from">Od:</label>
+                    <input type="datetime-local" id="control-date-from" class="form-control">
+
+                    <label for="control-date-to">Do:</label>
+                    <input type="datetime-local" id="control-date-to" class="form-control">
+                </div>
 
                 <button id="refresh-control" class="btn btn-primary">Obnovit</button>
             </div>

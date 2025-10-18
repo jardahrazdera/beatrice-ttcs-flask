@@ -134,12 +134,27 @@ function initHistoryChart() {
  */
 async function loadTemperatureHistory() {
     try {
-        const hours = document.getElementById('temp-hours').value;
+        const rangeType = document.getElementById('temp-range-type').value;
         const interval = document.getElementById('temp-interval').value;
-
-        // Add cache buster to prevent browser caching
         const cacheBuster = new Date().getTime();
-        const response = await utils.apiCall(`/api/history/average?hours=${hours}&interval=${interval}&_=${cacheBuster}`);
+
+        let url;
+        if (rangeType === 'relative') {
+            const hours = document.getElementById('temp-hours').value;
+            url = `/api/history/average?hours=${hours}&interval=${interval}&_=${cacheBuster}`;
+        } else {
+            const dateFrom = document.getElementById('temp-date-from').value;
+            const dateTo = document.getElementById('temp-date-to').value;
+
+            if (!dateFrom || !dateTo) {
+                utils.showNotification('Vyplňte obě data', 'warning');
+                return;
+            }
+
+            url = `/api/history/average/range?from=${encodeURIComponent(dateFrom)}&to=${encodeURIComponent(dateTo)}&interval=${interval}&_=${cacheBuster}`;
+        }
+
+        const response = await utils.apiCall(url);
 
         if (response.success && response.data) {
             // Store data for pagination - REVERSE to show newest first
@@ -326,12 +341,26 @@ function exportTemperatureCSV() {
  */
 async function loadEvents() {
     try {
-        // Remove limit parameter, fetch all events up to a reasonable maximum
+        const rangeType = document.getElementById('events-range-type').value;
         const eventType = document.getElementById('event-type').value;
-
-        // Add cache buster
         const cacheBuster = new Date().getTime();
-        let url = `/api/history/events?limit=1000&_=${cacheBuster}`;
+
+        let url;
+        if (rangeType === 'relative') {
+            const hours = document.getElementById('events-hours').value;
+            url = `/api/history/events?hours=${hours}&limit=10000&_=${cacheBuster}`;
+        } else {
+            const dateFrom = document.getElementById('events-date-from').value;
+            const dateTo = document.getElementById('events-date-to').value;
+
+            if (!dateFrom || !dateTo) {
+                utils.showNotification('Vyplňte obě data', 'warning');
+                return;
+            }
+
+            url = `/api/history/events/range?from=${encodeURIComponent(dateFrom)}&to=${encodeURIComponent(dateTo)}&_=${cacheBuster}`;
+        }
+
         if (eventType) {
             url += `&type=${eventType}`;
         }
@@ -447,10 +476,26 @@ function updateEventsPaginationControls(totalPages) {
  */
 async function loadControlHistory() {
     try {
-        const hours = document.getElementById('control-hours').value;
-        // Add cache buster
+        const rangeType = document.getElementById('control-range-type').value;
         const cacheBuster = new Date().getTime();
-        const response = await utils.apiCall(`/api/history/control?hours=${hours}&_=${cacheBuster}`);
+
+        let url;
+        if (rangeType === 'relative') {
+            const hours = document.getElementById('control-hours').value;
+            url = `/api/history/control?hours=${hours}&_=${cacheBuster}`;
+        } else {
+            const dateFrom = document.getElementById('control-date-from').value;
+            const dateTo = document.getElementById('control-date-to').value;
+
+            if (!dateFrom || !dateTo) {
+                utils.showNotification('Vyplňte obě data', 'warning');
+                return;
+            }
+
+            url = `/api/history/control/range?from=${encodeURIComponent(dateFrom)}&to=${encodeURIComponent(dateTo)}&_=${cacheBuster}`;
+        }
+
+        const response = await utils.apiCall(url);
 
         if (response.success && response.data) {
             controlData = response.data;
@@ -625,6 +670,93 @@ function updateStatisticsTable(tanks) {
 }
 
 /**
+ * Toggle date range type for temperature tab
+ */
+function toggleTempRangeType() {
+    const rangeType = document.getElementById('temp-range-type').value;
+    const relativeRange = document.getElementById('temp-relative-range');
+    const absoluteRange = document.getElementById('temp-absolute-range');
+
+    if (rangeType === 'relative') {
+        relativeRange.style.display = 'flex';
+        absoluteRange.style.display = 'none';
+    } else {
+        relativeRange.style.display = 'none';
+        absoluteRange.style.display = 'flex';
+
+        // Set default values if not set
+        const dateTo = document.getElementById('temp-date-to');
+        const dateFrom = document.getElementById('temp-date-from');
+        if (!dateTo.value) {
+            dateTo.value = new Date().toISOString().slice(0, 16);
+        }
+        if (!dateFrom.value) {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            dateFrom.value = yesterday.toISOString().slice(0, 16);
+        }
+    }
+}
+
+/**
+ * Toggle date range type for events tab
+ */
+function toggleEventsRangeType() {
+    const rangeType = document.getElementById('events-range-type').value;
+    const relativeRange = document.getElementById('events-relative-range');
+    const absoluteRange = document.getElementById('events-absolute-range');
+
+    if (rangeType === 'relative') {
+        relativeRange.style.display = 'flex';
+        absoluteRange.style.display = 'none';
+    } else {
+        relativeRange.style.display = 'none';
+        absoluteRange.style.display = 'flex';
+
+        // Set default values if not set
+        const dateTo = document.getElementById('events-date-to');
+        const dateFrom = document.getElementById('events-date-from');
+        if (!dateTo.value) {
+            dateTo.value = new Date().toISOString().slice(0, 16);
+        }
+        if (!dateFrom.value) {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            dateFrom.value = yesterday.toISOString().slice(0, 16);
+        }
+    }
+}
+
+/**
+ * Toggle date range type for control tab
+ */
+function toggleControlRangeType() {
+    const rangeType = document.getElementById('control-range-type').value;
+    const relativeRange = document.getElementById('control-relative-range');
+    const absoluteRange = document.getElementById('control-absolute-range');
+
+    if (rangeType === 'relative') {
+        relativeRange.style.display = 'flex';
+        absoluteRange.style.display = 'none';
+    } else {
+        relativeRange.style.display = 'none';
+        absoluteRange.style.display = 'flex';
+
+        // Set default values if not set
+        const dateTo = document.getElementById('control-date-to');
+        const dateFrom = document.getElementById('control-date-from');
+        if (!dateTo.value) {
+            dateTo.value = new Date().toISOString().slice(0, 16);
+        }
+        if (!dateFrom.value) {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            dateFrom.value = yesterday.toISOString().slice(0, 16);
+        }
+    }
+}
+
+/**
  * Initialize page
  */
 document.addEventListener('DOMContentLoaded', () => {
@@ -640,18 +772,28 @@ document.addEventListener('DOMContentLoaded', () => {
     loadTemperatureHistory();
 
     // Event listeners for temperature history
+    document.getElementById('temp-range-type')?.addEventListener('change', toggleTempRangeType);
     document.getElementById('refresh-temp')?.addEventListener('click', loadTemperatureHistory);
     document.getElementById('export-temp')?.addEventListener('click', exportTemperatureCSV);
     document.getElementById('temp-hours')?.addEventListener('change', loadTemperatureHistory);
     document.getElementById('temp-interval')?.addEventListener('change', loadTemperatureHistory);
+    document.getElementById('temp-date-from')?.addEventListener('change', loadTemperatureHistory);
+    document.getElementById('temp-date-to')?.addEventListener('change', loadTemperatureHistory);
 
     // Event listeners for events tab
+    document.getElementById('events-range-type')?.addEventListener('change', toggleEventsRangeType);
     document.getElementById('refresh-events')?.addEventListener('click', loadEvents);
+    document.getElementById('events-hours')?.addEventListener('change', loadEvents);
+    document.getElementById('events-date-from')?.addEventListener('change', loadEvents);
+    document.getElementById('events-date-to')?.addEventListener('change', loadEvents);
     document.getElementById('event-type')?.addEventListener('change', loadEvents);
 
     // Event listeners for control tab
+    document.getElementById('control-range-type')?.addEventListener('change', toggleControlRangeType);
     document.getElementById('refresh-control')?.addEventListener('click', loadControlHistory);
     document.getElementById('control-hours')?.addEventListener('change', loadControlHistory);
+    document.getElementById('control-date-from')?.addEventListener('change', loadControlHistory);
+    document.getElementById('control-date-to')?.addEventListener('change', loadControlHistory);
 
     // Event listeners for statistics tab
     document.getElementById('refresh-stats')?.addEventListener('click', loadStatistics);
