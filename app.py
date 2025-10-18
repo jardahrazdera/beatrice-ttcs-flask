@@ -411,8 +411,6 @@ def broadcast_updates():
     """Background thread to broadcast temperature and status updates via WebSocket."""
     global broadcast_running
 
-    app.logger.info('Broadcast thread started')
-
     while broadcast_running:
         try:
             if temp_controller:
@@ -507,7 +505,11 @@ def shutdown_system():
 atexit.register(shutdown_system)
 
 # Initialize system at module level (works with both gunicorn and direct run)
-initialize_system()
+# Only initialize if in Flask reloader child process or in production (gunicorn)
+# WERKZEUG_RUN_MAIN is set by Flask reloader in the child process
+if os.environ.get('WERKZEUG_RUN_MAIN') == 'true' or not app.debug:
+    # This is either the reloader child process or production - initialize
+    initialize_system()
 
 
 if __name__ == '__main__':
