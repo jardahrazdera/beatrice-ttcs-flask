@@ -26,9 +26,12 @@ app = Flask(__name__)
 app.config.from_object(Config)
 
 # Initialize CSRF protection
+# Note: WTF_CSRF_CHECK_DEFAULT=False means CSRF is disabled by default
+# This is appropriate since the app uses JavaScript fetch for all API calls
+# If we add traditional form submissions in future, protect them with @csrf.protect
 csrf = CSRFProtect(app)
 
-# Initialize SocketIO for real-time updates (exempt from CSRF)
+# Initialize SocketIO for real-time updates
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Setup logging

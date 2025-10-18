@@ -41,6 +41,7 @@ class Config:
     # CSRF Protection (Flask-WTF)
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = None  # CSRF tokens don't expire
+    WTF_CSRF_CHECK_DEFAULT = False  # We'll enable it selectively for form routes only
 
     # Session settings
     SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
