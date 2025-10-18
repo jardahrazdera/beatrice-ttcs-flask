@@ -68,18 +68,26 @@ sudo mkdir -p $INSTALL_DIR
 sudo chown $USER:$USER $INSTALL_DIR
 echo ""
 
-# Clone or copy repository
-if [ -d ".git" ]; then
-    echo "Copying application files from current directory..."
-    cp -r . $INSTALL_DIR/
-    cd $INSTALL_DIR
-    # Clean up development files
-    rm -rf .git venv __pycache__ logs/*.log 2>/dev/null || true
-else
-    echo "Cloning repository from GitHub..."
-    git clone $REPO_URL $INSTALL_DIR
-    cd $INSTALL_DIR
-fi
+# Clone repository (always use git for easier updates)
+echo "Cloning repository from GitHub..."
+git clone $REPO_URL $INSTALL_DIR
+cd $INSTALL_DIR
+
+# Configure git to preserve local files
+echo "Configuring git to preserve local configuration..."
+cat > .git/info/exclude <<EOF
+# Local configuration files (not tracked by git)
+.env
+config.json
+data.db
+logs/
+venv/
+__pycache__/
+*.pyc
+*.log
+EOF
+
+echo "✓ Git repository configured"
 echo ""
 
 # Create virtual environment
@@ -295,4 +303,10 @@ if [[ $INSTALL_NGINX =~ ^[Yy]$ ]]; then
     echo "  Nginx Status:  sudo systemctl status nginx"
     echo "  Nginx Logs:    sudo tail -f /var/log/nginx/water-tank-error.log"
 fi
+echo ""
+echo "Deployment (updating to latest version):"
+echo "  cd $INSTALL_DIR"
+echo "  git pull origin master"
+echo "  source venv/bin/activate && pip install -r requirements.txt"
+echo "  sudo systemctl restart $SERVICE_NAME"
 echo ""
