@@ -8,18 +8,20 @@
 
 {% block content %}
 <div class="dashboard">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h2 style="margin: 0;">Přehled systému</h2>
-        <div style="text-align: right;">
-            <div style="display: flex; align-items: center; gap: 0.5rem; justify-content: flex-end; margin-bottom: 0.25rem;">
+    <div style="margin-bottom: 1.5rem;">
+        <h2 style="margin: 0 0 1rem 0; text-align: center;">Přehled systému</h2>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 2rem; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
                 <span id="connection-pulse" class="connection-pulse"></span>
                 <span id="connection-status" style="font-size: 0.875rem; color: var(--text-secondary);">Připojování...</span>
             </div>
-            <div id="last-update" style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
+            <div id="last-update" style="font-size: 0.875rem; color: var(--text-secondary);">
                 Poslední aktualizace: --
             </div>
-            <div id="current-date" style="font-size: 1rem; color: var(--text-secondary);"></div>
-            <div id="current-time" style="font-size: 1rem; font-weight: 600; color: var(--text-primary);"></div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <div id="current-date" style="font-size: 0.875rem; color: var(--text-secondary);"></div>
+                <div id="current-time" style="font-size: 0.875rem; font-weight: 600; color: var(--text-primary);"></div>
+            </div>
         </div>
     </div>
 
