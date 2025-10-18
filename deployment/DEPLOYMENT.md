@@ -19,7 +19,45 @@ This guide explains how to deploy the Hot Water Tank Control System to a Raspber
 
 ## Installation Methods
 
-### Method 1: Automated Installation (Recommended)
+### Method 1: Quick Installation (Recommended)
+
+The simplest way to install on a clean Raspberry Pi:
+
+1. **Download and run installation script**
+   ```bash
+   wget https://raw.githubusercontent.com/jardahrazdera/beatrice-ttcs-flask/master/deployment/install.sh
+   chmod +x install.sh
+   ./install.sh
+   ```
+
+   The script will:
+   - Check for Evok installation
+   - Install system dependencies
+   - Clone repository to `/opt/water-tank-control` (with git for easy updates)
+   - Configure git to preserve local files (.env, config.json, data.db, logs)
+   - Set up Python virtual environment
+   - Install Python dependencies
+   - Generate secure secret key
+   - Install systemd service (automatically configured for current user)
+   - Optionally configure nginx (with automatic conflict detection)
+   - Optionally start the service
+
+   **Note:** The script automatically detects and resolves nginx conflicts (e.g., evok-web, duplicate default_server directives)
+
+2. **Access Web Interface**
+   ```
+   http://<raspberry-pi-ip>:5000
+   ```
+
+   Default credentials:
+   - Username: `admin`
+   - Password: `admin123`
+
+   **Important:** After installation, you can delete the `install.sh` file from your home directory - it's no longer needed.
+
+### Method 2: Installation from Cloned Repository
+
+If you prefer to clone the repository first:
 
 1. **SSH to Raspberry Pi**
    ```bash
@@ -38,29 +76,9 @@ This guide explains how to deploy the Hot Water Tank Control System to a Raspber
    ./deployment/install.sh
    ```
 
-   The script will:
-   - Check for Evok installation
-   - Install system dependencies
-   - Create installation directory (`/opt/water-tank-control`)
-   - Set up Python virtual environment
-   - Install Python dependencies
-   - Generate secure secret key
-   - Install systemd service (automatically configured for current user)
-   - Optionally configure nginx (with automatic conflict detection)
-   - Optionally start the service
+   Follow the same installation process as Method 1.
 
-   **Note:** The script automatically detects and resolves nginx conflicts (e.g., evok-web, duplicate default_server directives)
-
-4. **Access Web Interface**
-   ```
-   http://<raspberry-pi-ip>:5000
-   ```
-
-   Default credentials:
-   - Username: `admin`
-   - Password: `admin123`
-
-### Method 2: Manual Installation
+### Method 3: Manual Installation
 
 1. **Install Dependencies**
    ```bash
@@ -458,17 +476,42 @@ If you prefer direct access without nginx:
 
 ## Updating
 
-### Update from Git
+### Git-Based Deployment (Recommended)
+
+If you installed using the automated installation script, your installation is already configured as a git repository. Updating is simple:
 
 ```bash
 cd /opt/water-tank-control
 git pull origin master
 source venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements.txt  # Only if dependencies changed
 sudo systemctl restart water-tank-control
 ```
 
-### Manual File Update
+**Note:** Your local configuration files (`.env`, `config.json`, `data.db`, logs) are automatically preserved during updates - they're excluded from git tracking.
+
+### Checking Current Version
+
+```bash
+cd /opt/water-tank-control
+git log -1 --oneline  # Show current commit
+git status            # Check for any local modifications
+```
+
+### Rolling Back to Previous Version
+
+If an update causes issues, you can easily rollback:
+
+```bash
+cd /opt/water-tank-control
+git log --oneline -10  # Show last 10 commits
+git reset --hard <commit-hash>  # Rollback to specific commit
+sudo systemctl restart water-tank-control
+```
+
+### Manual File Update (Legacy Method)
+
+Only use this if your installation is not git-based:
 
 ```bash
 # Stop service

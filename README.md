@@ -32,11 +32,36 @@ This system monitors and controls water temperature in three interconnected stor
 - **Communication**: Evok API (REST/JSON + WebSocket)
 - **System**: systemd service, logging
 
-## Installation
+## Quick Start
+
+### Production Installation (Raspberry Pi with Unipi 1.1)
+
+The easiest way to install on a Raspberry Pi:
+
+```bash
+wget https://raw.githubusercontent.com/jardahrazdera/beatrice-ttcs-flask/master/deployment/install.sh
+chmod +x install.sh
+./install.sh
+```
+
+The installation script will:
+- Install all dependencies
+- Clone the repository to `/opt/water-tank-control`
+- Set up Python virtual environment
+- Configure systemd service
+- Optionally configure nginx reverse proxy
+
+**Prerequisites:** Ensure Evok is installed and running before installation.
+
+For detailed installation instructions and configuration, see [deployment/DEPLOYMENT.md](deployment/DEPLOYMENT.md).
+
+### Development Setup
+
+For development on your local machine:
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/jardahrazdera/beatrice-ttcs-flask.git
 cd beatrice-ttcs-flask
 ```
 
@@ -51,12 +76,18 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. Configure Evok for Unipi 1.1 according to hardware setup
+4. Configure environment:
+```bash
+cp .env.example .env
+# Edit .env to set USE_MOCK_EVOK=true for development
+```
 
 5. Run the application:
 ```bash
 python app.py
 ```
+
+Access at `http://localhost:5000`
 
 ## Configuration
 
@@ -84,7 +115,46 @@ Access the web interface at `http://<raspberry-pi-ip>:5000` to configure:
 
 ## Deployment
 
-Deploy as a systemd service for automatic startup on boot. See deployment documentation for detailed instructions.
+The system is designed for production deployment on Raspberry Pi with automatic startup and monitoring.
+
+### Quick Deployment
+
+After installation, the system runs as a systemd service:
+
+```bash
+# Service management
+sudo systemctl start water-tank-control    # Start service
+sudo systemctl stop water-tank-control     # Stop service
+sudo systemctl restart water-tank-control  # Restart service
+sudo systemctl status water-tank-control   # Check status
+
+# View logs
+sudo journalctl -u water-tank-control -f   # Follow logs in real-time
+```
+
+### Updating
+
+The installation uses git for easy updates:
+
+```bash
+cd /opt/water-tank-control
+git pull origin master
+source venv/bin/activate
+pip install -r requirements.txt  # If dependencies changed
+sudo systemctl restart water-tank-control
+```
+
+Your local configuration (`.env`, `config.json`, `data.db`, logs) is automatically preserved during updates.
+
+### Production Features
+
+- **Systemd Integration**: Auto-start on boot, automatic restart on failure
+- **Nginx Support**: Optional reverse proxy for professional deployment
+- **Logging**: Rotating file logs + systemd journal integration
+- **Security**: Process isolation, read-only system files
+- **Git-Based Deployment**: Easy updates and rollback capability
+
+For complete deployment instructions, nginx configuration, SSL setup, and troubleshooting, see [deployment/DEPLOYMENT.md](deployment/DEPLOYMENT.md).
 
 ## Project Structure
 
