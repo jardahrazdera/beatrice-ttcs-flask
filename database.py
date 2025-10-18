@@ -44,9 +44,17 @@ class Database:
 
     @contextmanager
     def _get_connection(self):
-        """Context manager for database connections."""
+        """Context manager for database connections with performance optimizations."""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
+
+        # Performance optimizations
+        conn.execute('PRAGMA journal_mode=WAL')  # Write-Ahead Logging for better concurrency
+        conn.execute('PRAGMA synchronous=NORMAL')  # Balance safety vs performance
+        conn.execute('PRAGMA cache_size=-64000')  # 64MB cache (negative = KB)
+        conn.execute('PRAGMA temp_store=MEMORY')  # Store temp tables in memory
+        conn.execute('PRAGMA mmap_size=268435456')  # 256MB memory-mapped I/O
+
         try:
             yield conn
             conn.commit()
@@ -104,8 +112,23 @@ class Database:
             ''')
 
             cursor.execute('''
+                CREATE INDEX IF NOT EXISTS idx_temp_timestamp_tank
+                ON temperature_readings(timestamp, tank_number)
+            ''')
+
+            cursor.execute('''
+                CREATE INDEX IF NOT EXISTS idx_temp_tank_timestamp
+                ON temperature_readings(tank_number, timestamp)
+            ''')
+
+            cursor.execute('''
                 CREATE INDEX IF NOT EXISTS idx_events_timestamp
                 ON system_events(timestamp)
+            ''')
+
+            cursor.execute('''
+                CREATE INDEX IF NOT EXISTS idx_events_type_timestamp
+                ON system_events(event_type, timestamp)
             ''')
 
             cursor.execute('''
@@ -113,7 +136,7 @@ class Database:
                 ON control_actions(timestamp)
             ''')
 
-            self.logger.info('Database schema initialized')
+            self.logger.info('Database schema initialized with performance indices')
 
     def insert_temperature_reading(self, sensor_id: str, temperature: float,
                                    tank_number: Optional[int] = None):
