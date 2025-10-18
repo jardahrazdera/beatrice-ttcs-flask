@@ -106,6 +106,7 @@ beatrice-ttcs-flask/
 ├── database.py            # SQLite database management
 ├── requirements.txt       # Python dependencies
 ├── run_dev.sh            # Development run script
+├── run_tests.py          # Test runner script
 ├── .env.example          # Environment variables template
 ├── static/               # Frontend assets
 │   ├── css/              # Stylesheets
@@ -117,6 +118,11 @@ beatrice-ttcs-flask/
 │   ├── dashboard.html    # Main dashboard
 │   ├── settings.html     # Settings page
 │   └── history.html      # Historical data page
+├── tests/                # Test suite (68 tests)
+│   ├── test_control.py   # Temperature control tests
+│   ├── test_config.py    # Configuration tests
+│   ├── test_evok.py      # Hardware API tests
+│   └── test_api.py       # Flask API tests
 ├── logs/                 # Application logs
 ├── deployment/           # Deployment files
 │   ├── install.sh
@@ -147,8 +153,29 @@ Edit templates and assets:
 
 Refresh browser to see changes.
 
-### 3. Testing Changes
+### 3. Running Tests
 
+The project includes a comprehensive test suite with 68 tests covering all critical functionality.
+
+```bash
+# Run all tests using the test runner
+./run_tests.py
+
+# Run tests using pytest
+venv/bin/python -m pytest
+
+# Run specific test file
+venv/bin/python -m pytest tests/test_control.py -v
+
+# Run with coverage report
+venv/bin/python -m pytest --cov=. --cov-report=html
+```
+
+For detailed testing documentation, see [TESTING.md](TESTING.md).
+
+### 4. Testing Changes
+
+- Run the test suite before committing code
 - Test in mock mode first
 - Verify all features work without hardware
 - Test API endpoints using browser dev tools
@@ -370,10 +397,20 @@ See separate deployment documentation for:
 
 1. Create feature branch
 2. Make changes
-3. Test thoroughly in mock mode
-4. Test on actual hardware if possible
-5. Update documentation
-6. Create pull request
+3. **Run the test suite**: `./run_tests.py`
+4. **Add tests** for new features or bug fixes
+5. Test thoroughly in mock mode
+6. Test on actual hardware if possible
+7. Update documentation
+8. Create pull request
+
+### Before Submitting
+
+- [ ] All tests pass: `./run_tests.py`
+- [ ] New features have tests
+- [ ] Bug fixes have regression tests
+- [ ] No new warnings in logs
+- [ ] Documentation is updated
 
 ## License
 

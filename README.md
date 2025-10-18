@@ -89,6 +89,23 @@ python app.py
 
 Access at `http://localhost:5000`
 
+### Running Tests
+
+The project includes a comprehensive test suite with 68 tests covering all critical functionality:
+
+```bash
+# Run all tests
+./run_tests.py
+
+# Run with pytest
+venv/bin/python -m pytest
+
+# Run specific test file
+venv/bin/python -m pytest tests/test_control.py -v
+```
+
+For detailed testing documentation, see [TESTING.md](TESTING.md).
+
 ## Configuration
 
 Access the web interface at `http://<raspberry-pi-ip>:5000` to configure:
@@ -167,8 +184,10 @@ For complete deployment instructions, nginx configuration, SSL setup, and troubl
 ├── evok_mock.py           # Mock client for development
 ├── auth.py                # Authentication (basic + super admin)
 ├── database.py            # SQLite database management
+├── run_tests.py           # Test runner
 ├── static/                # CSS, JS, images
 ├── templates/             # HTML templates (Czech language)
+├── tests/                 # Test suite (68 tests)
 ├── logs/                  # Application logs
 ├── deployment/            # Deployment scripts and configs
 └── doc/                   # Additional documentation
