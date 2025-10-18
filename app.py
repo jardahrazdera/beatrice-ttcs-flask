@@ -57,6 +57,48 @@ broadcast_thread = None
 broadcast_running = False
 
 
+@app.route('/health')
+@csrf.exempt
+def health_check():
+    """
+    Health check endpoint for monitoring systems.
+    Returns system status without requiring authentication.
+    """
+    try:
+        health_status = {
+            'status': 'healthy',
+            'service': 'water-tank-control',
+            'timestamp': db._get_cet_now().isoformat()
+        }
+
+        # Check if controller is running
+        if temp_controller:
+            health_status['controller_active'] = True
+            health_status['sensor_count'] = len(temp_controller.sensor_ids)
+        else:
+            health_status['controller_active'] = False
+            health_status['status'] = 'degraded'
+
+        # Check database connectivity
+        try:
+            db_info = db.get_database_info()
+            health_status['database_connected'] = True
+            health_status['database_size_bytes'] = db_info['size']
+        except Exception:
+            health_status['database_connected'] = False
+            health_status['status'] = 'degraded'
+
+        status_code = 200 if health_status['status'] == 'healthy' else 503
+        return jsonify(health_status), status_code
+
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': db._get_cet_now().isoformat()
+        }), 503
+
+
 @app.route('/')
 @requires_auth
 def index():

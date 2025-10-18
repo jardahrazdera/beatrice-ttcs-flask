@@ -146,8 +146,8 @@ class TemperatureController:
         Args:
             state: True to enable heating, False to disable
         """
-        relay_heating = self.config.get('relay_heating', 1)
-        relay_pump = self.config.get('relay_pump', 2)
+        relay_heating = self.config.get('relay_heating', '1_01')
+        relay_pump = self.config.get('relay_pump', '1_02')
 
         if state:
             # Turn on heating and pump
@@ -193,7 +193,7 @@ class TemperatureController:
             # Manual mode - use manual pump setting
             target_pump = self.config.get('manual_pump', False)
             if target_pump != self.pump_active:
-                relay_pump = self.config.get('relay_pump', 2)
+                relay_pump = self.config.get('relay_pump', '1_02')
                 self.evok.set_relay(relay_pump, target_pump)
                 self.pump_active = target_pump
                 self.pump_shutdown_time = None
@@ -202,7 +202,7 @@ class TemperatureController:
 
         # Automatic mode - handle delayed shutdown
         if self.pump_shutdown_time and self._get_cet_now() >= self.pump_shutdown_time:
-            relay_pump = self.config.get('relay_pump', 2)
+            relay_pump = self.config.get('relay_pump', '1_02')
             self.evok.set_relay(relay_pump, False)
             self.pump_active = False
             self.pump_shutdown_time = None
