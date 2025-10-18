@@ -32,7 +32,7 @@ class Config:
 
 
 class SystemConfig:
-    """System configuration for temperature control."""
+    """System configuration for temperature control with in-memory caching."""
 
     CONFIG_FILE = 'config.json'
 
@@ -52,8 +52,10 @@ class SystemConfig:
     }
 
     def __init__(self):
-        """Initialize configuration."""
+        """Initialize configuration with in-memory cache."""
         self.settings = self.load_settings()
+        self._cache_mtime = None  # Track file modification time
+        self._update_cache_mtime()
 
     def load_settings(self) -> Dict[str, Any]:
         """Load settings from configuration file."""
@@ -70,18 +72,35 @@ class SystemConfig:
                 return self.DEFAULT_SETTINGS.copy()
         return self.DEFAULT_SETTINGS.copy()
 
+    def _update_cache_mtime(self):
+        """Update the cached modification time of config file."""
+        if os.path.exists(self.CONFIG_FILE):
+            self._cache_mtime = os.path.getmtime(self.CONFIG_FILE)
+
+    def _is_cache_valid(self) -> bool:
+        """Check if cached settings are still valid (file hasn't been modified)."""
+        if not os.path.exists(self.CONFIG_FILE):
+            return True  # No file = cache is valid (using defaults)
+        current_mtime = os.path.getmtime(self.CONFIG_FILE)
+        return current_mtime == self._cache_mtime
+
     def save_settings(self) -> bool:
         """Save current settings to configuration file."""
         try:
             with open(self.CONFIG_FILE, 'w') as f:
                 json.dump(self.settings, f, indent=4)
+            self._update_cache_mtime()  # Update cache timestamp after save
             return True
         except Exception as e:
             print(f"Error saving config: {e}")
             return False
 
     def get(self, key: str, default=None):
-        """Get configuration value."""
+        """Get configuration value from cache (with automatic refresh if file changed)."""
+        # Reload if file was modified externally
+        if not self._is_cache_valid():
+            self.settings = self.load_settings()
+            self._update_cache_mtime()
         return self.settings.get(key, default)
 
     def set(self, key: str, value: Any) -> bool:
