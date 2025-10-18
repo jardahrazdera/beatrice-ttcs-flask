@@ -7,7 +7,11 @@ let historyChart;
 
 // Pagination state
 let temperatureData = [];
-let currentPage = 1;
+let eventsData = [];
+let controlData = [];
+let currentTempPage = 1;
+let currentEventsPage = 1;
+let currentControlPage = 1;
 const rowsPerPage = 50;
 
 /**
@@ -140,7 +144,7 @@ async function loadTemperatureHistory() {
         if (response.success && response.data) {
             // Store data for pagination - REVERSE to show newest first
             temperatureData = [...response.data].reverse();
-            currentPage = 1;
+            currentTempPage = 1;
 
             // Update chart with all data (keep chronological order - oldest to newest)
             updateTemperatureChart(response.data);
@@ -206,7 +210,7 @@ function updateTemperatureTable() {
 
     // Calculate pagination
     const totalPages = Math.ceil(temperatureData.length / rowsPerPage);
-    const startIndex = (currentPage - 1) * rowsPerPage;
+    const startIndex = (currentTempPage - 1) * rowsPerPage;
     const endIndex = Math.min(startIndex + rowsPerPage, temperatureData.length);
     const pageData = temperatureData.slice(startIndex, endIndex);
 
@@ -251,32 +255,32 @@ function updatePaginationControls(totalPages) {
 
     paginationDiv.style.display = 'flex';
 
-    const startRecord = ((currentPage - 1) * rowsPerPage) + 1;
-    const endRecord = Math.min(currentPage * rowsPerPage, temperatureData.length);
+    const startRecord = ((currentTempPage - 1) * rowsPerPage) + 1;
+    const endRecord = Math.min(currentTempPage * rowsPerPage, temperatureData.length);
 
     paginationDiv.innerHTML = `
-        <button class="btn btn-secondary" id="prev-page" ${currentPage === 1 ? 'disabled' : ''}>
+        <button class="btn btn-secondary" id="prev-page" ${currentTempPage === 1 ? 'disabled' : ''}>
             ← Předchozí
         </button>
         <span class="pagination-info">
-            Stránka ${currentPage} z ${totalPages} (zobrazeno ${startRecord}-${endRecord} z ${temperatureData.length} záznamů)
+            Stránka ${currentTempPage} z ${totalPages} (zobrazeno ${startRecord}-${endRecord} z ${temperatureData.length} záznamů)
         </span>
-        <button class="btn btn-secondary" id="next-page" ${currentPage === totalPages ? 'disabled' : ''}>
+        <button class="btn btn-secondary" id="next-page" ${currentTempPage === totalPages ? 'disabled' : ''}>
             Další →
         </button>
     `;
 
     // Add event listeners
     document.getElementById('prev-page')?.addEventListener('click', () => {
-        if (currentPage > 1) {
-            currentPage--;
+        if (currentTempPage > 1) {
+            currentTempPage--;
             updateTemperatureTable();
         }
     });
 
     document.getElementById('next-page')?.addEventListener('click', () => {
-        if (currentPage < totalPages) {
-            currentPage++;
+        if (currentTempPage < totalPages) {
+            currentTempPage++;
             updateTemperatureTable();
         }
     });
@@ -322,12 +326,12 @@ function exportTemperatureCSV() {
  */
 async function loadEvents() {
     try {
-        const limit = document.getElementById('event-limit').value;
+        // Remove limit parameter, fetch all events up to a reasonable maximum
         const eventType = document.getElementById('event-type').value;
 
         // Add cache buster
         const cacheBuster = new Date().getTime();
-        let url = `/api/history/events?limit=${limit}&_=${cacheBuster}`;
+        let url = `/api/history/events?limit=1000&_=${cacheBuster}`;
         if (eventType) {
             url += `&type=${eventType}`;
         }
@@ -335,7 +339,9 @@ async function loadEvents() {
         const response = await utils.apiCall(url);
 
         if (response.success && response.data) {
-            updateEventsTable(response.data);
+            eventsData = response.data;
+            currentEventsPage = 1;
+            updateEventsTable();
         }
     } catch (error) {
         console.error('Error loading events:', error);
@@ -344,18 +350,25 @@ async function loadEvents() {
 }
 
 /**
- * Update events table with data
+ * Update events table with paginated data
  */
-function updateEventsTable(data) {
+function updateEventsTable() {
     const tbody = document.getElementById('events-table-body');
     if (!tbody) return;
 
-    if (data.length === 0) {
+    if (eventsData.length === 0) {
         tbody.innerHTML = '<tr><td colspan="3" class="empty">Žádné události k zobrazení</td></tr>';
+        updateEventsPaginationControls(0);
         return;
     }
 
-    tbody.innerHTML = data.map(event => {
+    // Calculate pagination
+    const totalPages = Math.ceil(eventsData.length / rowsPerPage);
+    const startIndex = (currentEventsPage - 1) * rowsPerPage;
+    const endIndex = Math.min(startIndex + rowsPerPage, eventsData.length);
+    const pageData = eventsData.slice(startIndex, endIndex);
+
+    tbody.innerHTML = pageData.map(event => {
         // Parse UTC timestamp and convert to CET
         const utcDate = new Date(event.timestamp + 'Z');
         const time = utcDate.toLocaleString('cs-CZ', {
@@ -379,6 +392,54 @@ function updateEventsTable(data) {
             </tr>
         `;
     }).join('');
+
+    // Update pagination controls
+    updateEventsPaginationControls(totalPages);
+}
+
+/**
+ * Update events pagination controls
+ */
+function updateEventsPaginationControls(totalPages) {
+    const paginationDiv = document.getElementById('events-pagination');
+    if (!paginationDiv) return;
+
+    if (totalPages <= 1) {
+        paginationDiv.style.display = 'none';
+        return;
+    }
+
+    paginationDiv.style.display = 'flex';
+
+    const startRecord = ((currentEventsPage - 1) * rowsPerPage) + 1;
+    const endRecord = Math.min(currentEventsPage * rowsPerPage, eventsData.length);
+
+    paginationDiv.innerHTML = `
+        <button class="btn btn-secondary" id="prev-events-page" ${currentEventsPage === 1 ? 'disabled' : ''}>
+            ← Předchozí
+        </button>
+        <span class="pagination-info">
+            Stránka ${currentEventsPage} z ${totalPages} (zobrazeno ${startRecord}-${endRecord} z ${eventsData.length} záznamů)
+        </span>
+        <button class="btn btn-secondary" id="next-events-page" ${currentEventsPage === totalPages ? 'disabled' : ''}>
+            Další →
+        </button>
+    `;
+
+    // Add event listeners
+    document.getElementById('prev-events-page')?.addEventListener('click', () => {
+        if (currentEventsPage > 1) {
+            currentEventsPage--;
+            updateEventsTable();
+        }
+    });
+
+    document.getElementById('next-events-page')?.addEventListener('click', () => {
+        if (currentEventsPage < totalPages) {
+            currentEventsPage++;
+            updateEventsTable();
+        }
+    });
 }
 
 /**
@@ -392,7 +453,9 @@ async function loadControlHistory() {
         const response = await utils.apiCall(`/api/history/control?hours=${hours}&_=${cacheBuster}`);
 
         if (response.success && response.data) {
-            updateControlTable(response.data);
+            controlData = response.data;
+            currentControlPage = 1;
+            updateControlTable();
         }
     } catch (error) {
         console.error('Error loading control history:', error);
@@ -401,18 +464,25 @@ async function loadControlHistory() {
 }
 
 /**
- * Update control actions table with data
+ * Update control actions table with paginated data
  */
-function updateControlTable(data) {
+function updateControlTable() {
     const tbody = document.getElementById('control-table-body');
     if (!tbody) return;
 
-    if (data.length === 0) {
+    if (controlData.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" class="empty">Žádné akce k zobrazení</td></tr>';
+        updateControlPaginationControls(0);
         return;
     }
 
-    tbody.innerHTML = data.map(action => {
+    // Calculate pagination
+    const totalPages = Math.ceil(controlData.length / rowsPerPage);
+    const startIndex = (currentControlPage - 1) * rowsPerPage;
+    const endIndex = Math.min(startIndex + rowsPerPage, controlData.length);
+    const pageData = controlData.slice(startIndex, endIndex);
+
+    tbody.innerHTML = pageData.map(action => {
         // Parse UTC timestamp and convert to CET
         const utcDate = new Date(action.timestamp + 'Z');
         const time = utcDate.toLocaleString('cs-CZ', {
@@ -438,6 +508,54 @@ function updateControlTable(data) {
             </tr>
         `;
     }).join('');
+
+    // Update pagination controls
+    updateControlPaginationControls(totalPages);
+}
+
+/**
+ * Update control history pagination controls
+ */
+function updateControlPaginationControls(totalPages) {
+    const paginationDiv = document.getElementById('control-pagination');
+    if (!paginationDiv) return;
+
+    if (totalPages <= 1) {
+        paginationDiv.style.display = 'none';
+        return;
+    }
+
+    paginationDiv.style.display = 'flex';
+
+    const startRecord = ((currentControlPage - 1) * rowsPerPage) + 1;
+    const endRecord = Math.min(currentControlPage * rowsPerPage, controlData.length);
+
+    paginationDiv.innerHTML = `
+        <button class="btn btn-secondary" id="prev-control-page" ${currentControlPage === 1 ? 'disabled' : ''}>
+            ← Předchozí
+        </button>
+        <span class="pagination-info">
+            Stránka ${currentControlPage} z ${totalPages} (zobrazeno ${startRecord}-${endRecord} z ${controlData.length} záznamů)
+        </span>
+        <button class="btn btn-secondary" id="next-control-page" ${currentControlPage === totalPages ? 'disabled' : ''}>
+            Další →
+        </button>
+    `;
+
+    // Add event listeners
+    document.getElementById('prev-control-page')?.addEventListener('click', () => {
+        if (currentControlPage > 1) {
+            currentControlPage--;
+            updateControlTable();
+        }
+    });
+
+    document.getElementById('next-control-page')?.addEventListener('click', () => {
+        if (currentControlPage < totalPages) {
+            currentControlPage++;
+            updateControlTable();
+        }
+    });
 }
 
 /**
@@ -530,7 +648,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event listeners for events tab
     document.getElementById('refresh-events')?.addEventListener('click', loadEvents);
     document.getElementById('event-type')?.addEventListener('change', loadEvents);
-    document.getElementById('event-limit')?.addEventListener('change', loadEvents);
 
     // Event listeners for control tab
     document.getElementById('refresh-control')?.addEventListener('click', loadControlHistory);

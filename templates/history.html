@@ -94,14 +94,6 @@
                     <option value="warning">Varování</option>
                 </select>
 
-                <label for="event-limit">Počet záznamů:</label>
-                <select id="event-limit" class="form-control">
-                    <option value="50">50</option>
-                    <option value="100" selected>100</option>
-                    <option value="200">200</option>
-                    <option value="500">500</option>
-                </select>
-
                 <button id="refresh-events" class="btn btn-primary">Obnovit</button>
             </div>
 
@@ -122,6 +114,9 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Pagination Controls -->
+            <div id="events-pagination" class="pagination"></div>
         </div>
     </div>
 
@@ -167,6 +162,9 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Pagination Controls -->
+            <div id="control-pagination" class="pagination"></div>
         </div>
     </div>
 
