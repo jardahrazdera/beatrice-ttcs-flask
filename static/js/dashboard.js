@@ -19,6 +19,93 @@ const temperatureHistory = {
 
 const MAX_HISTORY_POINTS = 60; // Keep last 60 data points
 
+// Connection status tracking
+let lastUpdateTime = null;
+let staleDataCheckInterval = null;
+const STALE_DATA_THRESHOLD = 30000; // 30 seconds in milliseconds
+
+/**
+ * Update connection status indicator
+ */
+function updateConnectionStatus(status, text) {
+    const pulse = document.getElementById('connection-pulse');
+    const statusText = document.getElementById('connection-status');
+
+    if (pulse) {
+        pulse.className = 'connection-pulse ' + status;
+    }
+
+    if (statusText) {
+        statusText.textContent = text;
+    }
+}
+
+/**
+ * Update last update timestamp
+ */
+function updateLastUpdateTime() {
+    const lastUpdateEl = document.getElementById('last-update');
+    if (!lastUpdateEl || !lastUpdateTime) return;
+
+    const now = new Date();
+    const diff = Math.floor((now - lastUpdateTime) / 1000); // seconds
+
+    let text;
+    if (diff < 10) {
+        text = 'Právě teď';
+    } else if (diff < 60) {
+        text = `Před ${diff} sekundami`;
+    } else {
+        const minutes = Math.floor(diff / 60);
+        text = `Před ${minutes} ${minutes === 1 ? 'minutou' : 'minutami'}`;
+    }
+
+    lastUpdateEl.textContent = `Poslední aktualizace: ${text}`;
+}
+
+/**
+ * Check for stale data
+ */
+function checkStaleData() {
+    if (!lastUpdateTime) return;
+
+    const now = new Date();
+    const timeSinceUpdate = now - lastUpdateTime;
+    const staleWarning = document.getElementById('stale-data-warning');
+
+    if (timeSinceUpdate > STALE_DATA_THRESHOLD) {
+        // Data is stale
+        if (staleWarning) {
+            staleWarning.style.display = 'block';
+        }
+        updateConnectionStatus('stale', 'Neaktuální data');
+    } else {
+        // Data is fresh
+        if (staleWarning) {
+            staleWarning.style.display = 'none';
+        }
+    }
+
+    // Update relative time
+    updateLastUpdateTime();
+}
+
+/**
+ * Mark data as updated
+ */
+function markDataUpdated() {
+    lastUpdateTime = new Date();
+    updateLastUpdateTime();
+
+    // Hide stale warning
+    const staleWarning = document.getElementById('stale-data-warning');
+    if (staleWarning) {
+        staleWarning.style.display = 'none';
+    }
+
+    updateConnectionStatus('connected', 'Připojeno');
+}
+
 /**
  * Initialize WebSocket connection
  */
@@ -28,25 +115,41 @@ function initWebSocket() {
     socket.on('connect', () => {
         console.log('Connected to server');
         utils.showNotification('Připojeno k serveru', 'success');
+        updateConnectionStatus('connected', 'Připojeno');
+
+        // Start stale data checking
+        if (staleDataCheckInterval) {
+            clearInterval(staleDataCheckInterval);
+        }
+        staleDataCheckInterval = setInterval(checkStaleData, 5000); // Check every 5 seconds
     });
 
     socket.on('disconnect', () => {
         console.log('Disconnected from server');
         utils.showNotification('Odpojeno od serveru', 'warning');
+        updateConnectionStatus('disconnected', 'Odpojeno');
+
+        // Stop stale data checking
+        if (staleDataCheckInterval) {
+            clearInterval(staleDataCheckInterval);
+        }
     });
 
     socket.on('temperature_update', (data) => {
         updateTemperatureDisplay(data);
         updateTemperatureChart(data);
+        markDataUpdated();
     });
 
     socket.on('status_update', (data) => {
         updateStatusDisplay(data);
+        markDataUpdated();
     });
 
     socket.on('error', (error) => {
         console.error('WebSocket error:', error);
         utils.showNotification('Chyba komunikace', 'error');
+        updateConnectionStatus('disconnected', 'Chyba');
     });
 }
 

@@ -345,6 +345,51 @@ body {
     50% { opacity: 0.5; }
 }
 
+/* Connection Pulse Indicator */
+.connection-pulse {
+    display: inline-block;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    background-color: var(--secondary-color);
+    position: relative;
+}
+
+.connection-pulse.connected {
+    background-color: var(--success-color);
+    animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+}
+
+.connection-pulse.disconnected {
+    background-color: var(--danger-color);
+}
+
+.connection-pulse.stale {
+    background-color: var(--warning-color);
+    animation: pulse-warning 1s ease-in-out infinite;
+}
+
+@keyframes pulse-ring {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+@keyframes pulse-warning {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.4;
+    }
+}
+
 .status-text {
     font-size: 1.5rem;
     font-weight: 600;
