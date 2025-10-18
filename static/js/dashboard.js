@@ -382,6 +382,9 @@ async function fetchInitialData() {
         // Fetch current status
         const statusData = await utils.apiCall('/api/status');
         updateStatusDisplay(statusData);
+
+        // Mark data as updated (initialize timestamp)
+        markDataUpdated();
     } catch (error) {
         console.error('Error fetching initial data:', error);
         utils.showNotification('Chyba načítání dat', 'error');
