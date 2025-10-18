@@ -8,7 +8,7 @@ let historyChart;
 // Pagination state
 let temperatureData = [];
 let currentPage = 1;
-const rowsPerPage = 100;
+const rowsPerPage = 50;
 
 /**
  * Initialize tab switching
@@ -28,8 +28,31 @@ function initTabs() {
             // Add active class to clicked tab
             button.classList.add('active');
             document.getElementById(`${tabName}-tab`).classList.add('active');
+
+            // Load data for the selected tab if not already loaded
+            loadTabData(tabName);
         });
     });
+}
+
+/**
+ * Load data for specific tab when it becomes active
+ */
+function loadTabData(tabName) {
+    switch(tabName) {
+        case 'temperature':
+            // Temperature data is already loaded on page load
+            break;
+        case 'events':
+            loadEvents();
+            break;
+        case 'control':
+            loadControlHistory();
+            break;
+        case 'statistics':
+            loadStatistics();
+            break;
+    }
 }
 
 /**
@@ -110,17 +133,19 @@ async function loadTemperatureHistory() {
         const hours = document.getElementById('temp-hours').value;
         const interval = document.getElementById('temp-interval').value;
 
-        const response = await utils.apiCall(`/api/history/average?hours=${hours}&interval=${interval}`);
+        // Add cache buster to prevent browser caching
+        const cacheBuster = new Date().getTime();
+        const response = await utils.apiCall(`/api/history/average?hours=${hours}&interval=${interval}&_=${cacheBuster}`);
 
         if (response.success && response.data) {
-            // Store data for pagination
-            temperatureData = response.data;
+            // Store data for pagination - REVERSE to show newest first
+            temperatureData = [...response.data].reverse();
             currentPage = 1;
 
-            // Update chart with all data
+            // Update chart with all data (keep chronological order - oldest to newest)
             updateTemperatureChart(response.data);
 
-            // Update table with first page
+            // Update table with first page (newest records first)
             updateTemperatureTable();
         }
     } catch (error) {
@@ -195,7 +220,6 @@ function updateTemperatureTable() {
             year: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
-            second: '2-digit',
             timeZone: 'Europe/Prague'
         });
         return `
@@ -301,7 +325,9 @@ async function loadEvents() {
         const limit = document.getElementById('event-limit').value;
         const eventType = document.getElementById('event-type').value;
 
-        let url = `/api/history/events?limit=${limit}`;
+        // Add cache buster
+        const cacheBuster = new Date().getTime();
+        let url = `/api/history/events?limit=${limit}&_=${cacheBuster}`;
         if (eventType) {
             url += `&type=${eventType}`;
         }
@@ -361,7 +387,9 @@ function updateEventsTable(data) {
 async function loadControlHistory() {
     try {
         const hours = document.getElementById('control-hours').value;
-        const response = await utils.apiCall(`/api/history/control?hours=${hours}`);
+        // Add cache buster
+        const cacheBuster = new Date().getTime();
+        const response = await utils.apiCall(`/api/history/control?hours=${hours}&_=${cacheBuster}`);
 
         if (response.success && response.data) {
             updateControlTable(response.data);
@@ -418,7 +446,9 @@ function updateControlTable(data) {
 async function loadStatistics() {
     try {
         const hours = document.getElementById('stats-hours').value;
-        const response = await utils.apiCall(`/api/statistics?hours=${hours}`);
+        // Add cache buster
+        const cacheBuster = new Date().getTime();
+        const response = await utils.apiCall(`/api/statistics?hours=${hours}&_=${cacheBuster}`);
 
         if (response.success && response.data) {
             updateStatistics(response.data);
