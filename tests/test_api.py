@@ -206,6 +206,41 @@ class TestFlaskAPI(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
 
+    def test_heating_system_enable(self):
+        """Test enabling heating system."""
+        system_config.set('heating_system_enabled', False)
+
+        response = self.client.post('/api/settings/heating-system',
+            json={'enabled': True})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(system_config.get('heating_system_enabled'))
+        data = json.loads(response.data)
+        self.assertTrue(data['success'])
+        self.assertTrue(data['heating_system_enabled'])
+
+    def test_heating_system_disable(self):
+        """Test disabling heating system."""
+        system_config.set('heating_system_enabled', True)
+
+        response = self.client.post('/api/settings/heating-system',
+            json={'enabled': False})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(system_config.get('heating_system_enabled'))
+        data = json.loads(response.data)
+        self.assertTrue(data['success'])
+        self.assertFalse(data['heating_system_enabled'])
+
+    def test_heating_system_missing_parameter(self):
+        """Test heating system endpoint with missing parameter."""
+        response = self.client.post('/api/settings/heating-system',
+            json={})
+
+        self.assertEqual(response.status_code, 400)
+        data = json.loads(response.data)
+        self.assertIn('error', data)
+
     @patch('app.requires_super_admin')
     def test_manual_override_requires_super_admin(self, mock_super_admin):
         """Test that manual override requires super admin password."""
@@ -275,7 +310,7 @@ class TestFlaskAPI(unittest.TestCase):
         # Minimum valid values
         response = self.client.post('/api/settings/temperature',
             json={
-                'setpoint': 30.0,
+                'setpoint': 5.0,
                 'hysteresis': 0.5,
                 'max_temperature': 60.0
             })

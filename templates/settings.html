@@ -14,8 +14,8 @@
                 <div class="form-group">
                     <label for="setpoint">Cílová teplota (°C)</label>
                     <input type="number" id="setpoint" name="setpoint"
-                           min="30" max="85" step="0.5" value="60" required>
-                    <small>Rozsah: 30-85°C</small>
+                           min="5" max="85" step="0.5" value="60" required>
+                    <small>Rozsah: 5-85°C</small>
                 </div>
 
                 <div class="form-group">
@@ -34,6 +34,27 @@
 
                 <button type="submit" class="btn btn-primary">Uložit nastavení teploty</button>
             </form>
+        </div>
+
+        <!-- Heating System Control -->
+        <div class="card">
+            <h3>Ovládání systému topení</h3>
+            <div class="alert alert-info">
+                <strong>ℹ️ Informace:</strong> Pomocí těchto tlačítek můžete systém topení zapnout nebo vypnout. Při vypnutí systému přestane automatické řízení aktivovat topení, ale stále bude monitorovat teplotu.
+            </div>
+
+            <div class="heating-system-status">
+                <p><strong>Aktuální stav:</strong> <span id="heating-system-status-text" class="status-text">Zapnuto</span></p>
+            </div>
+
+            <div class="heating-control-buttons">
+                <button id="heating-system-on-btn" class="btn btn-success btn-heating-control" disabled>
+                    Zapnout
+                </button>
+                <button id="heating-system-off-btn" class="btn btn-danger btn-heating-control">
+                    Vypnout
+                </button>
+            </div>
         </div>
 
         <!-- Pump Settings -->

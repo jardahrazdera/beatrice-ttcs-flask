@@ -40,6 +40,7 @@ class TestSystemConfig(unittest.TestCase):
         self.assertEqual(self.config.get('max_temperature'), 85.0)
         self.assertEqual(self.config.get('update_interval'), 5)
         self.assertFalse(self.config.get('manual_override'))
+        self.assertTrue(self.config.get('heating_system_enabled'))
 
     def test_set_and_get(self):
         """Test setting and getting configuration values."""
@@ -121,6 +122,12 @@ class TestSystemConfig(unittest.TestCase):
         self.config.set('manual_override', False)
         self.assertFalse(self.config.get('manual_override'))
 
+        self.config.set('heating_system_enabled', False)
+        self.assertFalse(self.config.get('heating_system_enabled'))
+
+        self.config.set('heating_system_enabled', True)
+        self.assertTrue(self.config.get('heating_system_enabled'))
+
     def test_string_values(self):
         """Test handling of string values."""
         self.config.set('relay_heating', '1_01')
@@ -151,8 +158,8 @@ class TestConfigValidation(unittest.TestCase):
         self.assertEqual(self.config.get('setpoint'), 60.0)
 
         # Edge cases
-        self.config.set('setpoint', 30.0)  # Minimum reasonable
-        self.assertEqual(self.config.get('setpoint'), 30.0)
+        self.config.set('setpoint', 5.0)  # Minimum reasonable
+        self.assertEqual(self.config.get('setpoint'), 5.0)
 
         self.config.set('setpoint', 85.0)  # Maximum reasonable
         self.assertEqual(self.config.get('setpoint'), 85.0)
