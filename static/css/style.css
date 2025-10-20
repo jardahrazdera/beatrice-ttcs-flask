@@ -769,6 +769,16 @@ body {
     display: none;
 }
 
+/* Success Button */
+.btn-success {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+    background-color: #059669;
+}
+
 /* Danger Button */
 .btn-danger {
     background-color: var(--danger-color);

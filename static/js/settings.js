@@ -283,6 +283,9 @@ async function loadSettings() {
         updateButtonState('heating', response.manual_heating || false);
         updateButtonState('pump', response.manual_pump || false);
 
+        // Heating system control
+        updateHeatingSystemStatus(response.heating_system_enabled !== false);
+
         // Hardware config
         utils.updateElement('relay-heating', response.relay_heating || 1);
         utils.updateElement('relay-pump', response.relay_pump || 2);
@@ -487,6 +490,61 @@ async function saveManualState() {
 }
 
 /**
+ * Update heating system control status and button states
+ */
+function updateHeatingSystemStatus(enabled) {
+    const statusText = document.getElementById('heating-system-status-text');
+    const onBtn = document.getElementById('heating-system-on-btn');
+    const offBtn = document.getElementById('heating-system-off-btn');
+
+    if (enabled) {
+        statusText.textContent = 'Zapnuto';
+        statusText.className = 'status-text status-on';
+        onBtn.disabled = true;
+        offBtn.disabled = false;
+    } else {
+        statusText.textContent = 'Vypnuto';
+        statusText.className = 'status-text status-off';
+        onBtn.disabled = false;
+        offBtn.disabled = true;
+    }
+}
+
+/**
+ * Enable heating system
+ */
+async function enableHeatingSystem() {
+    try {
+        const response = await utils.apiCall('/api/settings/heating-system', 'POST', {
+            enabled: true
+        });
+
+        updateHeatingSystemStatus(true);
+        utils.showNotification('Systém topení byl zapnut', 'success');
+    } catch (error) {
+        console.error('Error enabling heating system:', error);
+        utils.showNotification('Chyba při zapínání systému topení', 'error');
+    }
+}
+
+/**
+ * Disable heating system
+ */
+async function disableHeatingSystem() {
+    try {
+        const response = await utils.apiCall('/api/settings/heating-system', 'POST', {
+            enabled: false
+        });
+
+        updateHeatingSystemStatus(false);
+        utils.showNotification('Systém topení byl vypnut', 'success');
+    } catch (error) {
+        console.error('Error disabling heating system:', error);
+        utils.showNotification('Chyba při vypínání systému topení', 'error');
+    }
+}
+
+/**
  * Load database statistics
  */
 async function loadDatabaseStats() {
@@ -621,6 +679,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const pumpBtn = document.getElementById('toggle-pump-btn');
     if (pumpBtn) {
         pumpBtn.addEventListener('click', togglePump);
+    }
+
+    // Heating system control buttons
+    const heatingSystemOnBtn = document.getElementById('heating-system-on-btn');
+    if (heatingSystemOnBtn) {
+        heatingSystemOnBtn.addEventListener('click', enableHeatingSystem);
+    }
+
+    const heatingSystemOffBtn = document.getElementById('heating-system-off-btn');
+    if (heatingSystemOffBtn) {
+        heatingSystemOffBtn.addEventListener('click', disableHeatingSystem);
     }
 
     // Delete database button

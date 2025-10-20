@@ -214,6 +214,17 @@ function updateStatusDisplay(data) {
             warningBanner.style.display = 'none';
         }
     }
+
+    // Heating system disabled warning banner
+    const heatingSystemWarning = document.getElementById('heating-system-disabled-warning');
+    if (heatingSystemWarning) {
+        // Show warning if heating system is disabled (and not in manual override mode)
+        if (data.heating_system_enabled === false && !data.manual_override) {
+            heatingSystemWarning.style.display = 'block';
+        } else {
+            heatingSystemWarning.style.display = 'none';
+        }
+    }
 }
 
 /**

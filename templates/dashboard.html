@@ -31,6 +31,13 @@
         <p>Poslední aktualizace dat proběhla před více než 30 sekundami. Zkontrolujte připojení k serveru.</p>
     </div>
 
+    <!-- Heating System Disabled Warning Banner -->
+    <div id="heating-system-disabled-warning" class="alert alert-danger" style="display: none;">
+        <strong>⚠️ VAROVÁNÍ: SYSTÉM TOPENÍ VYPNUT!</strong>
+        <p>Automatické řízení topení je deaktivováno. Topení se nezapne, dokud systém znovu nezapnete v nastavení.</p>
+        <p><a href="{{ url_for('settings') }}" class="btn btn-warning">Přejít do nastavení</a></p>
+    </div>
+
     <!-- Manual Override Warning Banner -->
     <div id="manual-override-warning" class="alert alert-danger" style="display: none;">
         <strong>⚠️ VAROVÁNÍ: MANUÁLNÍ REŽIM AKTIVNÍ!</strong>
