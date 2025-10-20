@@ -114,6 +114,14 @@ class TemperatureController:
                 self.set_heating(target_heating)
             return
 
+        # Check if heating system is enabled by user
+        if not self.config.get('heating_system_enabled', True):
+            # Heating system disabled by user - turn off heating if currently on
+            if self.heating_active:
+                self.logger.info("Heating system disabled by user, turning off heating")
+                self.set_heating(False)
+            return
+
         if self.average_temperature is None:
             self.logger.warning("No valid temperature reading, heating disabled")
             self.set_heating(False)
@@ -303,4 +311,5 @@ class TemperatureController:
             'setpoint': self.config.get('setpoint'),
             'hysteresis': self.config.get('hysteresis'),
             'manual_override': self.config.get('manual_override'),
+            'heating_system_enabled': self.config.get('heating_system_enabled', True),
         }

@@ -75,6 +75,7 @@ class SystemConfig:
         'relay_pump': '1_02',       # Relay circuit for circulation pump (Unipi format: "1_02")
         'manual_override': False,   # Manual control mode
         'manual_heating': False,    # Manual heating state
+        'heating_system_enabled': True,  # Heating system enabled/disabled by user
         'data_retention_days': 365, # Database data retention period in days
     }
 

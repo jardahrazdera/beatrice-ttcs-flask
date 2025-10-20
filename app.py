@@ -198,7 +198,8 @@ def get_status():
         'pump': False,
         'setpoint': system_config.get('setpoint', 60.0),
         'hysteresis': system_config.get('hysteresis', 2.0),
-        'manual_override': system_config.get('manual_override', False)
+        'manual_override': system_config.get('manual_override', False),
+        'heating_system_enabled': system_config.get('heating_system_enabled', True)
     })
 
 
@@ -226,8 +227,8 @@ def save_temperature_settings():
         hysteresis = float(data.get('hysteresis', 2.0))
         max_temperature = float(data.get('max_temperature', 85.0))
 
-        if not (30 <= setpoint <= 85):
-            return jsonify({'error': 'Setpoint must be between 30-85°C'}), 400
+        if not (5 <= setpoint <= 85):
+            return jsonify({'error': 'Setpoint must be between 5-85°C'}), 400
 
         if not (0.5 <= hysteresis <= 10):
             return jsonify({'error': 'Hysteresis must be between 0.5-10°C'}), 400
@@ -326,6 +327,35 @@ def save_manual_override():
 
     except Exception as e:
         app.logger.error(f'Error saving manual override: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/settings/heating-system', methods=['POST'])
+@requires_auth
+def save_heating_system_control():
+    """API endpoint to enable/disable heating system. Available to all authenticated users."""
+    try:
+        data = request.get_json()
+
+        if 'enabled' not in data:
+            return jsonify({'error': 'Missing required parameter: enabled'}), 400
+
+        enabled = bool(data.get('enabled'))
+
+        # Update configuration
+        system_config.set('heating_system_enabled', enabled)
+
+        # Log the action
+        app.logger.info(f'Heating system {"enabled" if enabled else "disabled"} by user')
+
+        return jsonify({
+            'success': True,
+            'message': f'Heating system {"enabled" if enabled else "disabled"}',
+            'heating_system_enabled': enabled
+        })
+
+    except Exception as e:
+        app.logger.error(f'Error updating heating system control: {e}')
         return jsonify({'error': str(e)}), 500
 
 
