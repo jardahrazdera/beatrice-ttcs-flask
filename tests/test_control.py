@@ -223,6 +223,34 @@ class TestTemperatureController(unittest.TestCase):
 
         self.assertTrue(self.controller.pump_active)
 
+    def test_heating_system_disabled(self):
+        """Test that heating turns off when heating_system_enabled is False."""
+        # Set temperature below setpoint (normally would turn on heating)
+        self.controller.average_temperature = 55.0
+        self.config.set('setpoint', 60.0)
+        self.config.set('hysteresis', 2.0)
+        self.config.set('heating_system_enabled', False)
+        self.controller.heating_active = True  # Start with heating on
+
+        self.controller.update_heating_control()
+
+        # Heating should be turned off because system is disabled
+        self.assertFalse(self.controller.heating_active)
+
+    def test_heating_system_disabled_prevents_activation(self):
+        """Test that heating won't activate when heating_system_enabled is False."""
+        # Set temperature below setpoint (normally would turn on heating)
+        self.controller.average_temperature = 55.0
+        self.config.set('setpoint', 60.0)
+        self.config.set('hysteresis', 2.0)
+        self.config.set('heating_system_enabled', False)
+        self.controller.heating_active = False
+
+        self.controller.update_heating_control()
+
+        # Heating should remain off
+        self.assertFalse(self.controller.heating_active)
+
     def test_get_status(self):
         """Test status reporting."""
         self.controller.temperatures = {'sensor1': 50.0}
@@ -236,6 +264,7 @@ class TestTemperatureController(unittest.TestCase):
         self.assertTrue(status['heating'])
         self.assertTrue(status['pump'])
         self.assertEqual(status['setpoint'], 60.0)
+        self.assertTrue(status['heating_system_enabled'])
 
 
 class TestTemperatureControlEdgeCases(unittest.TestCase):
